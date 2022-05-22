@@ -59,6 +59,13 @@ interface IMissions {
 
     }
 
+    struct NftRequirement {
+
+        IERC721 nft;
+        uint balance;
+
+    }
+
     struct DependentMission {
 
         string mission;
@@ -77,7 +84,7 @@ interface IMissions {
         
         DependentMission[] dependentMissions;
         Requirement[] requirements;
-        IERC721[] nftRequirements;
+        NftRequirement[] nftRequirements;
 
         uint maxLifetime;
         uint cooldown;
@@ -157,9 +164,10 @@ contract Missions is IMissions, Ownable, ReentrancyGuard {
             require(_valueOfStatistic(tokenId, requirement.key) >= requirement.threshold, "Lambo does not meet the requirements of this mission.");
         }
 
-        IERC721[] storage nftRequirements = missionConfig.nftRequirements;
+        NftRequirement[] storage nftRequirements = missionConfig.nftRequirements;
         for(uint i; i < nftRequirements.length; i ++) {
-            require(nftRequirements[i].balanceOf(msg.sender) > 0, "You don't meet the nft requirements for this mission.");
+            NftRequirement storage nftRequirement = nftRequirements[i];
+            require(nftRequirement.nft.balanceOf(msg.sender) > nftRequirement.balance, "You don't meet the nft requirements for this mission.");
         }
 
         DependentMission[] storage dependentMissions = missionConfig.dependentMissions;
