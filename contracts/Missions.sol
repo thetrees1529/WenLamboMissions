@@ -5,6 +5,7 @@ pragma solidity 0.8.14;
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
@@ -30,6 +31,10 @@ interface INftRewarder is IERC165 {
 
     function rewardNftsTo(address account) external returns(NftReward[] memory);
 
+}
+
+interface IMissionsWallet {
+    function withdrawAmount(address _to, uint256 _amount) external;
 }
 
 interface IMissions {
@@ -115,11 +120,13 @@ interface IMissions {
 
     function getMissionConfig(string calldata mission) external view returns(MissionConfig memory);
 
-    function withdraw(uint value) external;
+    function pause() external;
+
+    function unpause() external;
 
 }
 
-contract Missions is IMissions, Ownable, ReentrancyGuard {
+contract Missions is IMissions, Ownable, ReentrancyGuard, Pausable {
     
     using SafeERC20 for IERC20;
 
@@ -133,18 +140,18 @@ contract Missions is IMissions, Ownable, ReentrancyGuard {
 
     }
 
-    constructor(IAttributes lambos, IERC20 hville) {
+    constructor(IAttributes lambos, IMissionsWallet missionsWallet) {
+        _missionsWallet = missionsWallet;
         _lambos = lambos;
-        _hville = hville;
     }
 
+    IMissionsWallet private _missionsWallet;
     IAttributes private _lambos;
-    IERC20 private _hville;
 
     mapping(uint => LamboData) private _lambosToLamboData;
     mapping(string => MissionConfig) private _missionsToMissionConfigs;
 
-    function enterMission(uint tokenId, string calldata mission) external override nonReentrant requireOwnerOf(tokenId) {
+    function enterMission(uint tokenId, string calldata mission) external override nonReentrant requireOwnerOf(tokenId) whenNotPaused {
 
         LamboData storage lamboData = _lambosToLamboData[tokenId];
 
@@ -185,7 +192,7 @@ contract Missions is IMissions, Ownable, ReentrancyGuard {
 
     }
 
-    function endMission(uint tokenId) external override nonReentrant requireOwnerOf(tokenId) {
+    function endMission(uint tokenId) external override nonReentrant requireOwnerOf(tokenId) whenNotPaused {
 
         LamboData storage lamboData = _lambosToLamboData[tokenId];
 
@@ -244,7 +251,7 @@ contract Missions is IMissions, Ownable, ReentrancyGuard {
             }
         }
 
-        _hville.safeTransfer(msg.sender, newHistory.fixedPrize + newHistory.extraPrize);
+        _missionsWallet.withdrawAmount(msg.sender, newHistory.fixedPrize + newHistory.extraPrize);
 
         emit MissionFinished(msg.sender, tokenId, lamboData.mission, newHistory);
 
@@ -291,8 +298,12 @@ contract Missions is IMissions, Ownable, ReentrancyGuard {
         return _missionsToMissionConfigs[mission];
     }
 
-    function withdraw(uint value) external override nonReentrant onlyOwner {
-        _hville.safeTransfer(msg.sender, value);
+    function pause() external override onlyOwner {
+        _pause();
+    }
+
+    function unpause() external override onlyOwner {
+        _unpause();
     }
 
     function _valueOfStatistic(uint tokenId, string memory key) private view returns(uint value) {
