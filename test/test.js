@@ -45,7 +45,6 @@ describe("Missions tests", () => {
         missions = await (await Missions.deploy(lambos.address, hville.address)).deployed()
 
         await (await missions.setMissionConfig(testMission.name, testMission.config)).wait()
-        await (await hville.transfer(missions.address, testMission.config.fixedPrize * testMission.config.maxLifetime))
         
     })
 
@@ -82,7 +81,7 @@ describe("Missions tests", () => {
 
     it("should transfer the correct amount to the player", async () => {
         const balanceAfter = await hville.balanceOf(address)
-        assert.equal(balanceAfter, balanceBefore - testMission.config.fixedPrize)
+        assert.equal(balanceAfter, balanceBefore.toNumber() + testMission.config.fixedPrize)
     })
 
     it("shouldn't be possible to join a mission while there is a cooldown", async () => {
