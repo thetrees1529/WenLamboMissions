@@ -26,6 +26,13 @@ interface IWallet {
     function withdrawAmount(address _to, uint256 _amount) external;
     function hVilleAddress() external view returns(address);
 }
+interface INftDispenser {
+    struct Nft {
+        IERC721 nft;
+        uint tokenId;
+    }
+    function dispenseNftsTo(address to, uint numberOf) external returns(Nft[] memory);
+}
 
 interface IMissions {
     struct Level {
@@ -49,14 +56,23 @@ interface IMissions {
     struct NftBalanceRequirement {
         NftBalance nftBalanceRequirement;
     }
-    struct PrizeInfo {
-        string name;
-        uint prize;
+    struct NftPrize {
+        INftDispenser dispenser;
+        uint numberOf;
     }
     struct Prize {
         Level unlocksAt;
         uint weighting;
-        PrizeInfo info;
+        string name;
+        uint prize;
+        NftPrize[] nfts;
+    }
+    struct ResultView {
+        string name;
+        uint reward;
+        uint prize;
+        INftDispenser.Nft[] nftRewards;
+        INftDispenser.Nft[] nftPrizes;
     }
     struct MissionConfig {
         MinLevel[] minLevels;
@@ -67,11 +83,12 @@ interface IMissions {
         uint duration;
         uint cooldown;
         uint reward;
+        NftPrize[] nftRewards;
         uint maxCompletions;
     }
     event MissionConfigSet(string mission);
     event MissionEntered(uint tokenId, string mission, uint entryId, uint endsAt);
-    event MissionFinished(uint tokenId, string mission, uint entryId, uint reward, PrizeInfo prize, uint cooldownEndsAt);
+    event MissionFinished(uint tokenId, string mission, uint entryId, ResultView result, uint cooldownEndsAt);
     function pause() external;
     function unpause() external;
     function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external;
@@ -148,35 +165,47 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard {
         require(lamboData.inMission, "Lambo is not in a mission.");
         require(block.timestamp >= lamboData.missionEndsAt, "Lambo is still in the mission.");
         MissionConfig storage missionConfig = _missionConfigs[lamboData.currentMission];
+        
+        
         Prize[] storage prizes = missionConfig.prizes;
+        
         uint totalWeightings;
         for(uint i; i < prizes.length; i ++) {
-            Prize storage prize = prizes[i];
-            Level storage prizeUnlocksAt = prize.unlocksAt;
+            Prize storage prizeInfo = prizes[i];
+            Level storage prizeUnlocksAt = prizeInfo.unlocksAt;
             if(_getValueOfStat(tokenId, prizeUnlocksAt.stat) >= prizeUnlocksAt.value) {
                 totalWeightings += prizes[i].weighting;
             }
         }
-        PrizeInfo memory prizeInfo;
+        uint prize;
+        string memory prizeName;
+        INftDispenser.Nft[] memory nftPrizes;
         for(uint i; i < prizes.length; i ++) {
-            Prize storage prize = prizes[i];
-            Level storage prizeUnlocksAt = prize.unlocksAt;
+            Prize storage prizeInfo = prizes[i];
+            Level storage prizeUnlocksAt = prizeInfo.unlocksAt;
             if(_getValueOfStat(tokenId, prizeUnlocksAt.stat) >= prizeUnlocksAt.value) {
                 uint randomNumber = uint(sha256(abi.encode(_useNonce(tokenId, lamboData.currentMission))));
                 uint randomNumberUnderWeightings = randomNumber % totalWeightings;
-                if(randomNumberUnderWeightings < prize.weighting) {
-                    prizeInfo = prize.info;
+                if(randomNumberUnderWeightings < prizeInfo.weighting) {
+                    _wallet.withdrawAmount(msg.sender, prizeInfo.prize);
+                    nftPrizes = _dispenseNfts(msg.sender, prizeInfo.nfts);
+                    prizeName = prizeInfo.name;
+                    prize = prizeInfo.prize;
                     break;
                 }
-                totalWeightings - prize.weighting;
+                totalWeightings - prizeInfo.weighting;
             }
         }
-        _wallet.withdrawAmount(msg.sender, missionConfig.reward + prizeInfo.prize);
+        
+        _wallet.withdrawAmount(msg.sender, missionConfig.reward);
+        INftDispenser.Nft[] memory nftRewards = _dispenseNfts(msg.sender, missionConfig.nftRewards);
         lamboData.inMission = false;
         lamboData.cooldownEndsAt = block.timestamp + missionConfig.cooldown;
         LamboMissionData storage lamboMissionData = lamboData.missionData[lamboData.currentMission];
         lamboMissionData.completions ++;
-        emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, missionConfig.reward, prizeInfo, lamboData.cooldownEndsAt);
+        
+        emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, ResultView(prizeName, missionConfig.reward, prize, nftRewards, nftPrizes), lamboData.cooldownEndsAt);
+
     }
     function _getValueOfStat(uint tokenId, string storage key) private view returns(uint value) {
         bytes32 keyHash = sha256(bytes(key));
@@ -192,6 +221,18 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard {
         LamboMissionData storage lamboMissionData = _lamboData[tokenId].missionData[mission];
         nonce = lamboMissionData.nonce;
         lamboMissionData.nonce ++;
+    }
+    INftDispenser.Nft[] private _nfts;
+    function _dispenseNfts(address to, NftPrize[] memory nftPrizes) private returns(INftDispenser.Nft[] memory nftsDispensed) {
+        for(uint i; i < nftPrizes.length; i ++) {
+            NftPrize memory nftPrize = nftPrizes[i];
+            INftDispenser.Nft[] memory nfts = nftPrize.dispenser.dispenseNftsTo(to, nftPrize.numberOf);
+            for(uint j; j < nfts.length; j ++) {
+                _nfts.push(nfts[j]);
+            }
+        }
+        nftsDispensed = _nfts;
+        delete _nfts;
     }
     modifier ownsLambo(uint tokenId) {
         require(msg.sender == _lambos.ownerOf(tokenId), "You don't own this lambo.");
