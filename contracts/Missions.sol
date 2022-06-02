@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-interface IAttributes {
+interface ILambos is IERC721{
 
     struct StatisticView {
         string statistic;
@@ -22,304 +22,179 @@ interface IAttributes {
 
 }
 
-interface INftRewarder is IERC165 {
-
-    struct NftReward {
-        IERC721 token;
-        uint tokenId;
-    }
-
-    function rewardNftsTo(address account) external returns(NftReward[] memory);
-
-}
-
-interface IMissionsWallet {
+interface IWallet {
     function withdrawAmount(address _to, uint256 _amount) external;
+    function hVilleAddress() external view returns(address);
 }
 
 interface IMissions {
-
-    event MissionEntered(address indexed owner, uint indexed tokenId, string mission);
-    event MissionFinished(address indexed owner, uint indexed tokenId, string mission, History history);
-
-    struct Prize {
-
-        uint threshold;
-        uint weighting;
-        uint prize;
-
+    struct Level {
+        string stat;
+        uint value;
     }
-
-    struct PrizeChart {
-
-        string key;
-        Prize[] prizes;
-
+    struct MinLevel {
+        Level minLevel;
     }
-
-    struct Requirement {
-
-        string key;
-        uint threshold;
-
-    }
-
-    struct NftRequirement {
-
-        IERC721 nft;
-        uint balance;
-
-    }
-
-    struct DependentMission {
-
+    struct Completions {
         string mission;
-        uint completions;
-
+        uint numberOf;
     }
-
-
-    struct History {
-        uint fixedPrize;
-        uint extraPrize;
-        INftRewarder.NftReward[] fixedNftRewards;
+    struct MinCompletions {
+        Completions minCompletions;
     }
-
+    struct NftBalance {
+        IERC721 nft;
+        uint numberOf;
+    }
+    struct NftBalanceRequirement {
+        NftBalance nftBalanceRequirement;
+    }
+    struct PrizeInfo {
+        string name;
+        uint prize;
+    }
+    struct Prize {
+        Level unlocksAt;
+        uint weighting;
+        PrizeInfo info;
+    }
     struct MissionConfig {
-        
-        DependentMission[] dependentMissions;
-        Requirement[] requirements;
-        NftRequirement[] nftRequirements;
-
-        uint maxLifetime;
+        MinLevel[] minLevels;
+        MinCompletions[] minCompletions;
+        NftBalanceRequirement[] nftBalanceRequirements;
+        Prize[] prizes;
+        uint entry;
+        uint duration;
         uint cooldown;
-        uint fixedPrize;
-        INftRewarder fixedNftReward;
-        PrizeChart prizeChart;
-        uint length;
-
+        uint reward;
+        uint maxCompletions;
     }
-
-    function enterMission(uint tokenId, string calldata mission) external;
-
-    function endMission(uint tokenId) external;
-
-    function getCooldownEnd(uint tokenId) external view returns(uint);
-
-    function getCurrentMission(uint tokenId) external view returns(string memory);
-
-    function getCurrentMissionEnd (uint tokenId) external view returns(uint);
-
-    function getMissionHistoryLength(uint tokenId, string calldata mission) external view returns(uint);
-
-    function getMissionHistory(uint tokenId, string calldata mission, uint firstIndex, uint lastIndex) external view returns(History[] memory history);
-
-    function isInMission(uint tokenId) external view returns(bool);
-
-    function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external;
-
-    function getMissionConfig(string calldata mission) external view returns(MissionConfig memory);
-
+    event MissionConfigSet(string mission);
+    event MissionEntered(uint tokenId, string mission, uint entryId, uint endsAt);
+    event MissionFinished(uint tokenId, string mission, uint entryId, uint reward, PrizeInfo prize, uint cooldownEndsAt);
     function pause() external;
-
     function unpause() external;
-
+    function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external;
+    function getMissionConfig(string calldata mission) external view returns(MissionConfig memory);
+    function enterMission(uint tokenId, string calldata mission) external;
+    function finishMission(uint tokenId) external;
 }
 
-contract Missions is IMissions, Ownable, ReentrancyGuard, Pausable {
-    
+contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
-
-    struct LamboData {
-        
-        bool inMission;
-        string mission;
-        uint end;
-        uint cooldownEnd;
-        mapping(string => History[]) history;
-
-    }
-
-    constructor(IAttributes lambos, IMissionsWallet missionsWallet) {
-        _missionsWallet = missionsWallet;
+    ILambos private _lambos;
+    IWallet private _wallet;
+    constructor(ILambos lambos, IWallet wallet) {
         _lambos = lambos;
+        _wallet = wallet;
     }
-
-    IMissionsWallet private _missionsWallet;
-    IAttributes private _lambos;
-
-    mapping(uint => LamboData) private _lambosToLamboData;
-    mapping(string => MissionConfig) private _missionsToMissionConfigs;
-
-    function enterMission(uint tokenId, string calldata mission) external override nonReentrant requireOwnerOf(tokenId) whenNotPaused {
-
-        LamboData storage lamboData = _lambosToLamboData[tokenId];
-
-        if(lamboData.inMission) {
-            revert("Lambo is already in a mission.");
-        } else {
-            require(block.timestamp >= lamboData.cooldownEnd, "Lambo is under a cooldown for this mission.");
-        }
-
-        MissionConfig storage missionConfig = _missionsToMissionConfigs[mission];
-
-        require(lamboData.history[mission].length < missionConfig.maxLifetime, "Lambo has entered this mission too many times.");
-
-        Requirement[] storage requirements = missionConfig.requirements;
-        for(uint i; i < requirements.length; i ++) {
-            Requirement storage requirement = requirements[i];
-            require(_valueOfStatistic(tokenId, requirement.key) >= requirement.threshold, "Lambo does not meet the requirements of this mission.");
-        }
-
-        NftRequirement[] storage nftRequirements = missionConfig.nftRequirements;
-        for(uint i; i < nftRequirements.length; i ++) {
-            NftRequirement storage nftRequirement = nftRequirements[i];
-            require(nftRequirement.nft.balanceOf(msg.sender) > nftRequirement.balance, "You don't meet the nft requirements for this mission.");
-        }
-
-        DependentMission[] storage dependentMissions = missionConfig.dependentMissions;
-        mapping(string => History[]) storage history = lamboData.history;
-        for(uint i; i < dependentMissions.length; i ++) {
-            DependentMission storage dependentMission = dependentMissions[i];
-            require(history[dependentMission.mission].length >= dependentMission.completions, "Lambo does not meet the mission completions it depends on.");
-        }
-
-        lamboData.mission = mission;
-        lamboData.inMission = true;
-        lamboData.end = block.timestamp + missionConfig.length;
-
-        emit MissionEntered(msg.sender, tokenId, mission);
-
+    struct LamboMissionData {
+        uint completions;
+        uint nonce;
     }
-
-    function endMission(uint tokenId) external override nonReentrant requireOwnerOf(tokenId) whenNotPaused {
-
-        LamboData storage lamboData = _lambosToLamboData[tokenId];
-
-        require(lamboData.inMission, "Lambo is not in a mission.");
-        require(block.timestamp >= lamboData.end, "Lambo is still in the mission.");
-
-        MissionConfig storage missionConfig = _missionsToMissionConfigs[lamboData.mission];
-        History[] storage history = lamboData.history[lamboData.mission];
-
-        uint nonce = history.length;
-
-        PrizeChart storage prizeChart = missionConfig.prizeChart;
-        
-        uint value = _valueOfStatistic(tokenId, prizeChart.key);
-
-        Prize[] storage prizes = prizeChart.prizes;
-        uint[] memory eligiblePrizes = new uint[](prizes.length);
-        uint weightings;
-        uint eligiblePrizeCount;
-
-        for(uint i; i < prizes.length; i ++) {
-            Prize storage prize = prizes[i];
-            if(value >= prize.threshold) {
-                weightings += prize.weighting;
-                eligiblePrizes[eligiblePrizeCount] = i;
-                eligiblePrizeCount ++;
-            } 
-        }
-
-        history.push();
-
-        History storage newHistory = history[history.length - 1];
-
-        newHistory.fixedPrize = missionConfig.fixedPrize;
-
-        for(uint i; i < eligiblePrizeCount; i ++) {
-            Prize storage prize = prizes[eligiblePrizes[i]];
-            uint randomInt = uint(sha256(abi.encode(nonce))) % weightings;
-            if(randomInt < prize.weighting) {
-                newHistory.extraPrize = prize.prize + missionConfig.fixedPrize;
-                break;
-            } else {
-                nonce ++;
-                weightings -= prize.weighting;
-            }
-        }
-
-        lamboData.inMission = false;
-        lamboData.cooldownEnd = block.timestamp + missionConfig.cooldown;
-
-        (bool success,bytes memory data) = address(missionConfig.fixedNftReward).call(abi.encodeWithSelector(INftRewarder.rewardNftsTo.selector, msg.sender));
-        if(success && data.length > 0) {
-            INftRewarder.NftReward[] memory fixedNftRewards = abi.decode(data, (INftRewarder.NftReward[]));
-            for(uint i; i < fixedNftRewards.length; i ++) {
-                newHistory.fixedNftRewards.push(fixedNftRewards[i]);
-            }
-        }
-
-        _missionsWallet.withdrawAmount(msg.sender, newHistory.fixedPrize + newHistory.extraPrize);
-
-        emit MissionFinished(msg.sender, tokenId, lamboData.mission, newHistory);
-
+    struct LamboData {
+        bool inMission;
+        string currentMission;
+        uint missionEndsAt;
+        uint cooldownEndsAt;
+        mapping(string => LamboMissionData) missionData;
     }
-
-    function getCooldownEnd(uint tokenId) external override view returns(uint) {
-        LamboData storage lamboData = _lambosToLamboData[tokenId];
-        require(!lamboData.inMission, "Currently in mission.");
-        return lamboData.cooldownEnd;
-    }
-
-    function getCurrentMission(uint tokenId) external override view returns(string memory) {
-        LamboData storage lamboData = _lambosToLamboData[tokenId];
-        require(lamboData.inMission, "Lambo is not in a mission");
-        return lamboData.mission;
-    }
-
-    function getCurrentMissionEnd(uint tokenId) external override view returns(uint) {
-        LamboData storage lamboData = _lambosToLamboData[tokenId];
-        require(lamboData.inMission, "Lambo is not in a mission");
-        return lamboData.end;
-    }
-
-    function getMissionHistoryLength(uint tokenId, string calldata mission) external override view returns(uint) {
-        return _lambosToLamboData[tokenId].history[mission].length;
-    }
-
-    function getMissionHistory(uint tokenId, string calldata mission, uint firstIndex, uint lastIndex) external override view returns(History[] memory history) {
-        history = new History[](lastIndex - firstIndex + 1);
-        for(uint i; i < history.length; i ++) {
-            history[i] = _lambosToLamboData[tokenId].history[mission][i + firstIndex];
-        }
-    }
-
-    function isInMission(uint tokenId) external override view returns(bool) {
-        return _lambosToLamboData[tokenId].inMission;
-    }
-
-    function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external override nonReentrant onlyOwner {
-        _missionsToMissionConfigs[mission] = missionConfig;
-    }
-
-    function getMissionConfig(string calldata mission) external override view returns(MissionConfig memory) {
-        return _missionsToMissionConfigs[mission];
-    }
-
+    mapping(string => MissionConfig) private _missionConfigs;
+    mapping(uint => LamboData) private _lamboData;
     function pause() external override onlyOwner {
         _pause();
     }
-
     function unpause() external override onlyOwner {
         _unpause();
     }
+    function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external override onlyOwner nonReentrant whenNotPaused {
+        _missionConfigs[mission] = missionConfig;
+        emit MissionConfigSet(mission);
+    }
+    function getMissionConfig(string calldata mission) external view override returns(MissionConfig memory) {
+        return _missionConfigs[mission];
+    }
+    function enterMission(uint tokenId, string calldata mission) external override ownsLambo(tokenId) nonReentrant whenNotPaused {
+        LamboData storage lamboData = _lamboData[tokenId];
+        require(!lamboData.inMission, "Lambo is in a mission currently.");
+        require(block.timestamp >= lamboData.cooldownEndsAt, "There is a pending cooldown for this lambo.");
+        MissionConfig storage missionConfig = _missionConfigs[mission];
+        IERC20(_wallet.hVilleAddress()).safeTransferFrom(msg.sender, address(_wallet), missionConfig.entry);
+        MinLevel[] storage minLevels = missionConfig.minLevels;
+        for(uint i; i < minLevels.length; i ++) {
+            Level storage minLevel = minLevels[i].minLevel;
+            require(_getValueOfStat(tokenId, minLevel.stat) >= minLevel.value, "Lambo does not meet all the minimum level requirements for this mission.");
+        }
+        MinCompletions[] storage minCompletions = missionConfig.minCompletions;
+        for(uint i; i < minCompletions.length; i ++) {
+            Completions storage minCompletion = minCompletions[i].minCompletions;
+            require(lamboData.missionData[minCompletion.mission].completions >= minCompletion.numberOf, "Lambo does not meet all the minimum completions of other missions for this mission.");
+        }
+        NftBalanceRequirement[] storage nftBalanceRequirements = missionConfig.nftBalanceRequirements;
+        for(uint i; i < nftBalanceRequirements.length; i ++) {
+            NftBalance storage nftBalanceRequirement = nftBalanceRequirements[i].nftBalanceRequirement;
+            require(nftBalanceRequirement.nft.balanceOf(msg.sender) >= nftBalanceRequirement.numberOf, "Owner of lambo does not meet all the nft requirements for this mission.");
+        }
+        lamboData.missionEndsAt = block.timestamp + missionConfig.duration;
+        lamboData.currentMission = mission;
+        lamboData.inMission = true;
 
-    function _valueOfStatistic(uint tokenId, string memory key) private view returns(uint value) {
+        uint completions = lamboData.missionData[lamboData.currentMission].completions;
+        require(completions < missionConfig.maxCompletions, "This lambo has completed this mission too many times.");
+        emit MissionEntered(tokenId, mission, completions, lamboData.missionEndsAt);
+    }
+    function finishMission(uint tokenId) external override ownsLambo(tokenId) nonReentrant whenNotPaused {
+        LamboData storage lamboData = _lamboData[tokenId];
+        require(lamboData.inMission, "Lambo is not in a mission.");
+        require(block.timestamp >= lamboData.missionEndsAt, "Lambo is still in the mission.");
+        MissionConfig storage missionConfig = _missionConfigs[lamboData.currentMission];
+        Prize[] storage prizes = missionConfig.prizes;
+        uint totalWeightings;
+        for(uint i; i < prizes.length; i ++) {
+            Prize storage prize = prizes[i];
+            Level storage prizeUnlocksAt = prize.unlocksAt;
+            if(_getValueOfStat(tokenId, prizeUnlocksAt.stat) >= prizeUnlocksAt.value) {
+                totalWeightings += prizes[i].weighting;
+            }
+        }
+        PrizeInfo memory prizeInfo;
+        for(uint i; i < prizes.length; i ++) {
+            Prize storage prize = prizes[i];
+            Level storage prizeUnlocksAt = prize.unlocksAt;
+            if(_getValueOfStat(tokenId, prizeUnlocksAt.stat) >= prizeUnlocksAt.value) {
+                uint randomNumber = uint(sha256(abi.encode(_useNonce(tokenId, lamboData.currentMission))));
+                uint randomNumberUnderWeightings = randomNumber % totalWeightings;
+                if(randomNumberUnderWeightings < prize.weighting) {
+                    prizeInfo = prize.info;
+                    break;
+                }
+                totalWeightings - prize.weighting;
+            }
+        }
+        _wallet.withdrawAmount(msg.sender, missionConfig.reward + prizeInfo.prize);
+        lamboData.inMission = false;
+        lamboData.cooldownEndsAt = block.timestamp + missionConfig.cooldown;
+        LamboMissionData storage lamboMissionData = lamboData.missionData[lamboData.currentMission];
+        lamboMissionData.completions ++;
+        emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, missionConfig.reward, prizeInfo, lamboData.cooldownEndsAt);
+    }
+    function _getValueOfStat(uint tokenId, string storage key) private view returns(uint value) {
         bytes32 keyHash = sha256(bytes(key));
-        IAttributes.StatisticView[] memory statistics = _lambos.getAttributes(tokenId);
+        ILambos.StatisticView[] memory statistics = _lambos.getAttributes(tokenId);
         for(uint i; i < statistics.length; i ++) {
-            IAttributes.StatisticView memory statistic = statistics[i];
+            ILambos.StatisticView memory statistic = statistics[i];
             if(sha256(bytes(statistic.statistic)) == keyHash) {
                 return statistic.value;
             }
         }
     }
-
-    modifier requireOwnerOf(uint tokenId) {
+    function _useNonce(uint tokenId, string storage mission) private returns(uint nonce) {
+        LamboMissionData storage lamboMissionData = _lamboData[tokenId].missionData[mission];
+        nonce = lamboMissionData.nonce;
+        lamboMissionData.nonce ++;
+    }
+    modifier ownsLambo(uint tokenId) {
         require(msg.sender == _lambos.ownerOf(tokenId), "You don't own this lambo.");
         _;
     }
-
 }
