@@ -31,6 +31,7 @@ interface INftDispenser {
         IERC721 nft;
         uint tokenId;
     }
+    function collectionAddress() external view returns(address);
     function dispenseNftsTo(address to, uint numberOf) external returns(Nft[] memory);
 }
 
