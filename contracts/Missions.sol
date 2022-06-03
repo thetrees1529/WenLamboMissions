@@ -94,6 +94,7 @@ interface IMissions {
     function unpause() external;
     function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external;
     function getMissionConfig(string calldata mission) external view returns(MissionConfig memory);
+    function getMissionEntryCount(string calldata mission, uint tokenId) external view returns(uint);
     function enterMission(uint tokenId, string calldata mission) external;
     function finishMission(uint tokenId) external;
 }
@@ -131,6 +132,9 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard {
     }
     function getMissionConfig(string calldata mission) external view override returns(MissionConfig memory) {
         return _missionConfigs[mission];
+    }
+    function getMissionEntryCount(string calldata mission, uint tokenId) external view override returns(uint) {
+        return _lamboData[tokenId].missionData[mission].completions;
     }
     function enterMission(uint tokenId, string calldata mission) external override ownsLambo(tokenId) nonReentrant whenNotPaused {
         LamboData storage lamboData = _lamboData[tokenId];
