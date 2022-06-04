@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "utils/contracts/payments/ERC20Payments.sol";
 
 interface ILambos is IERC721{
 
@@ -97,13 +98,15 @@ interface IMissions {
     function getMissionEntryCount(string calldata mission, uint tokenId) external view returns(uint);
     function enterMission(uint tokenId, string calldata mission) external;
     function finishMission(uint tokenId) external;
+
+    function withdraw(uint value) external;
 }
 
-contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard {
+contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payments {
     using SafeERC20 for IERC20;
     ILambos private _lambos;
     IWallet private _wallet;
-    constructor(ILambos lambos, IWallet wallet) {
+    constructor(ILambos lambos, IWallet wallet) ERC20Payments(IERC20(wallet.hVilleAddress())) {
         _lambos = lambos;
         _wallet = wallet;
     }
@@ -141,7 +144,8 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard {
         require(!lamboData.inMission, "Lambo is in a mission currently.");
         require(block.timestamp >= lamboData.cooldownEndsAt, "There is a pending cooldown for this lambo.");
         MissionConfig storage missionConfig = _missionConfigs[mission];
-        IERC20(_wallet.hVilleAddress()).safeTransferFrom(msg.sender, address(_wallet), missionConfig.entry);
+        IERC20(_wallet.hVilleAddress()).safeTransferFrom(msg.sender, address(this), missionConfig.entry);
+        _makePayment(missionConfig.entry);
         MinLevel[] storage minLevels = missionConfig.minLevels;
         for(uint i; i < minLevels.length; i ++) {
             Level storage minLevel = minLevels[i].minLevel;
@@ -211,6 +215,9 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard {
         
         emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, ResultView(prizeName, missionConfig.reward, prize, nftRewards, nftPrizes), lamboData.cooldownEndsAt);
 
+    }
+    function withdraw(uint value) external override onlyOwner {
+        IERC20(_wallet.hVilleAddress()).safeTransfer(msg.sender, value);
     }
     function _getValueOfStat(uint tokenId, string storage key) private view returns(uint value) {
         bytes32 keyHash = sha256(bytes(key));
