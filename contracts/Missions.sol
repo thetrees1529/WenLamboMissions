@@ -1,6 +1,6 @@
 
 //SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -44,6 +44,9 @@ interface IMissions {
     struct MinLevel {
         Level minLevel;
     }
+    struct UnlockLevel {
+        Level unlockLevel;
+    }
     struct Completions {
         string mission;
         uint numberOf;
@@ -63,7 +66,7 @@ interface IMissions {
         uint numberOf;
     }
     struct Prize {
-        Level unlocksAt;
+        UnlockLevel[] unlockLevels;
         uint weighting;
         string name;
         uint prize;
@@ -99,7 +102,7 @@ interface IMissions {
     function enterMission(uint tokenId, string calldata mission) external;
     function finishMission(uint tokenId) external;
 
-    function withdraw(uint value) external;
+    function withdraw() external;
 }
 
 contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payments {
@@ -181,18 +184,30 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         uint totalWeightings;
         for(uint i; i < prizes.length; i ++) {
             Prize storage prizeInfo = prizes[i];
-            Level storage prizeUnlocksAt = prizeInfo.unlocksAt;
-            if(_getValueOfStat(tokenId, prizeUnlocksAt.stat) >= prizeUnlocksAt.value) {
-                totalWeightings += prizes[i].weighting;
+            UnlockLevel[] storage prizeUnlocks = prizeInfo.unlockLevels;
+            bool unlocked = true;
+            for(uint j; j < prizeUnlocks.length; j ++) {
+                if(!(_getValueOfStat(tokenId, prizeUnlocks[j].unlockLevel.stat) >= prizeUnlocks[j].unlockLevel.value)) {
+                    unlocked = false;
+                    break;
+                }
             }
+            if (unlocked) totalWeightings += prizes[i].weighting;
         }
         uint prize;
         string memory prizeName;
         INftDispenser.Nft[] memory nftPrizes;
         for(uint i; i < prizes.length; i ++) {
             Prize storage prizeInfo = prizes[i];
-            Level storage prizeUnlocksAt = prizeInfo.unlocksAt;
-            if(_getValueOfStat(tokenId, prizeUnlocksAt.stat) >= prizeUnlocksAt.value) {
+            UnlockLevel[] storage prizeUnlocks = prizeInfo.unlockLevels;
+            bool unlocked = true;
+            for(uint j; j < prizeUnlocks.length; j ++) {
+                if(!(_getValueOfStat(tokenId, prizeUnlocks[j].unlockLevel.stat) >= prizeUnlocks[j].unlockLevel.value)) {
+                    unlocked = false;
+                    break;
+                }
+            }
+            if(unlocked) {
                 uint randomNumber = uint(sha256(abi.encode(_useNonce(tokenId, lamboData.currentMission))));
                 uint randomNumberUnderWeightings = randomNumber % totalWeightings;
                 if(randomNumberUnderWeightings < prizeInfo.weighting) {
@@ -216,8 +231,8 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, ResultView(prizeName, missionConfig.reward, prize, nftRewards, nftPrizes), lamboData.cooldownEndsAt);
 
     }
-    function withdraw(uint value) external override onlyOwner {
-        IERC20(_wallet.hVilleAddress()).safeTransfer(msg.sender, value);
+    function withdraw() external override onlyOwner {
+        IERC20(_wallet.hVilleAddress()).safeTransfer(msg.sender, IERC20(_wallet.hVilleAddress()).balanceOf(address(this)));
     }
     function _getValueOfStat(uint tokenId, string storage key) private view returns(uint value) {
         bytes32 keyHash = sha256(bytes(key));

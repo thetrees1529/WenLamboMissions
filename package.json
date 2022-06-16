@@ -1,22 +1,28 @@
 {
-  "name": "missions",
+  "name": "contracts",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "hardhat.config.js",
+  "directories": {
+    "test": "test"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thetrees1529/WenLamboMissions.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thetrees1529/WenLamboMissions/issues"
+  },
+  "homepage": "https://github.com/thetrees1529/WenLamboMissions#readme",
   "dependencies": {
-    "@graphprotocol/graph-cli": "^0.30.2",
     "@nomiclabs/hardhat-ethers": "^2.0.6",
-    "@openzeppelin/contracts": "^4.6.0",
-    "chai": "^4.3.6",
-    "chai-as-promised": "^7.1.1",
-    "glob": "^7.2.0",
-    "hardhat": "^2.9.5",
+    "hardhat": "^2.9.9",
     "utils": "github:thetrees1529/solutils"
   }
 }
