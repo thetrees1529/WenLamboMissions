@@ -2,4 +2,3 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as missionsSol from "./Missions.sol";
-export { Greeter__factory } from "./Greeter__factory";

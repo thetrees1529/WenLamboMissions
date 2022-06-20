@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "devSetupMission": "hardhat run scripts/setupMission.js --network devnet"
+  },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.6",
     "@nomiclabs/hardhat-waffle": "^2.0.3",

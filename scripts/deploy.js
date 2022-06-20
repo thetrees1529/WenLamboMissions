@@ -1,6 +1,6 @@
 
-const walletAddr = "0x3e39AC7418f3eF23dED3Ec42608D6de6750E8245"
-const lamboAddr = "0xfC72c4bb047d6Ab9f31e7d66268BCc6a116c11c4"
+const walletAddr = "0x1A0b497A650fE94B72AeC42009F03F074ee6cdce"
+const lamboAddr = "0x976cEeE0d525780115E37325FD0CC3b8347b8fF1"
 const fs = require("fs")
 const path = require("path")
 async function main() {

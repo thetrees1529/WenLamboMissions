@@ -3,4 +3,3 @@
 /* eslint-disable */
 import type * as missionsSol from "./Missions.sol";
 export type { missionsSol };
-export type { Greeter } from "./Greeter";

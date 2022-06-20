@@ -4,13 +4,17 @@ const config = {
     minLevels: [{minLevel:{stat:"tires",value: 2}}],
     minCompletions: [],
     nftBalanceRequirements: [],
-    prizes: [],
+    prizes: [
+        [[],1,"1st Place", 170,[]],
+        [[],1,"2nd Place", 80,[]],
+        [[],1,"3rd Place", 40,[]]
+    ],
     entry: hre.ethers.utils.parseEther("10"),
-    duration: 60 * 60,
-    cooldown: 60 * 60,
-    reward: hre.ethers.utils.parseEther("170"),
+    duration: 20 ,
+    cooldown: 20 ,  
+    reward: hre.ethers.utils.parseEther("10"),
     nftRewards: [],
-    maxCompletions: 1
+    maxCompletions: 10
 }
 
 

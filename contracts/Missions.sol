@@ -192,7 +192,7 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
                     break;
                 }
             }
-            if (unlocked) totalWeightings += prizes[i].weighting;
+            if (unlocked) totalWeightings += prizeInfo.weighting;
         }
         uint prize;
         string memory prizeName;
@@ -204,6 +204,7 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
             for(uint j; j < prizeUnlocks.length; j ++) {
                 if(!(_getValueOfStat(tokenId, prizeUnlocks[j].unlockLevel.stat) >= prizeUnlocks[j].unlockLevel.value)) {
                     unlocked = false;
+                    
                     break;
                 }
             }
@@ -217,7 +218,7 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
                     prize = prizeInfo.prize;
                     break;
                 }
-                totalWeightings - prizeInfo.weighting;
+                totalWeightings -= prizeInfo.weighting;
             }
         }
         
