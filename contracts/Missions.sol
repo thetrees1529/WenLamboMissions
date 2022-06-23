@@ -80,6 +80,7 @@ interface IMissions {
         INftDispenser.Nft[] nftPrizes;
     }
     struct MissionConfig {
+        string description;
         MinLevel[] minLevels;
         MinCompletions[] minCompletions;
         NftBalanceRequirement[] nftBalanceRequirements;

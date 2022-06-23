@@ -153,6 +153,7 @@ export declare namespace IMissions {
   };
 
   export type MissionConfigStruct = {
+    description: PromiseOrValue<string>;
     minLevels: IMissions.MinLevelStruct[];
     minCompletions: IMissions.MinCompletionsStruct[];
     nftBalanceRequirements: IMissions.NftBalanceRequirementStruct[];
@@ -166,6 +167,7 @@ export declare namespace IMissions {
   };
 
   export type MissionConfigStructOutput = [
+    string,
     IMissions.MinLevelStructOutput[],
     IMissions.MinCompletionsStructOutput[],
     IMissions.NftBalanceRequirementStructOutput[],
@@ -177,6 +179,7 @@ export declare namespace IMissions {
     IMissions.NftPrizeStructOutput[],
     BigNumber
   ] & {
+    description: string;
     minLevels: IMissions.MinLevelStructOutput[];
     minCompletions: IMissions.MinCompletionsStructOutput[];
     nftBalanceRequirements: IMissions.NftBalanceRequirementStructOutput[];
@@ -197,7 +200,7 @@ export interface IMissionsInterface extends utils.Interface {
     "getMissionConfig(string)": FunctionFragment;
     "getMissionEntryCount(string,uint256)": FunctionFragment;
     "pause()": FunctionFragment;
-    "setMissionConfig(string,(((string,uint256))[],((string,uint256))[],((address,uint256))[],(((string,uint256))[],uint256,string,uint256,(address,uint256)[])[],uint256,uint256,uint256,uint256,(address,uint256)[],uint256))": FunctionFragment;
+    "setMissionConfig(string,(string,((string,uint256))[],((string,uint256))[],((address,uint256))[],(((string,uint256))[],uint256,string,uint256,(address,uint256)[])[],uint256,uint256,uint256,uint256,(address,uint256)[],uint256))": FunctionFragment;
     "unpause()": FunctionFragment;
     "withdraw()": FunctionFragment;
   };

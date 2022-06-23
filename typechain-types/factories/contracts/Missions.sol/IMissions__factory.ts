@@ -186,6 +186,11 @@ const _abi = [
       {
         components: [
           {
+            internalType: "string",
+            name: "description",
+            type: "string",
+          },
+          {
             components: [
               {
                 components: [
@@ -411,6 +416,11 @@ const _abi = [
       },
       {
         components: [
+          {
+            internalType: "string",
+            name: "description",
+            type: "string",
+          },
           {
             components: [
               {

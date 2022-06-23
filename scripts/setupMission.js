@@ -1,7 +1,13 @@
 const contractAddress = require("./deployedAddress")
 const name = "HARMOVILLE'S 1ST WENLAMBO CAR SHOW"
 const config = {
-    minLevels: [{minLevel:{stat:"tires",value: 2}}],
+minLevels: [{minLevel:{stat:"tires",value: 2}}],
+    description: JSON.stringify({
+        missionDetails: "this is the mission details",
+        rewardDetails: "this is the reward details",
+        cooldownDetails: "this is the cooldown details",
+        subtitle: "this is the subtitle"
+    }),
     minCompletions: [],
     nftBalanceRequirements: [],
     prizes: [
