@@ -11,9 +11,27 @@ minLevels: [{minLevel:{stat:"tires",value: 2}}],
     minCompletions: [],
     nftBalanceRequirements: [],
     prizes: [
-        [[],1,"1st Place", 170,[]],
-        [[],1,"2nd Place", 80,[]],
-        [[],1,"3rd Place", 40,[]]
+        {
+            unlockLevels: [],
+            weighting: 1,
+            name: "1st Place",
+            prize: hre.ethers.utils.parseEther("170"),
+            nfts: []
+        },
+        {
+            unlockLevels: [],
+            weighting: 1,
+            name: "2nd Place",
+            prize: hre.ethers.utils.parseEther("80"),
+            nfts: []
+        },
+        {
+            unlockLevels: [],
+            weighting: 1,
+            name: "3rd Place",
+            prize: hre.ethers.utils.parseEther("40"),
+            nfts: []
+        }
     ],
     entry: hre.ethers.utils.parseEther("10"),
     duration: 20 ,
