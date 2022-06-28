@@ -8,8 +8,22 @@ minLevels: [{minLevel:{stat:"tires",value: 2}}],
         cooldownDetails: "this is the cooldown details",
         subtitle: "this is the subtitle"
     }),
-    minCompletions: [],
-    nftBalanceRequirements: [],
+    minCompletions: [
+        // {
+        //     minCompletions: {
+        //         mission: "nonexistent mission",
+        //         numberOf: 0
+        //     }
+        // }
+    ],
+    nftBalanceRequirements: [
+        // {
+        //     nftBalanceRequirement: {
+        //         nft: hre.ethers.constants.AddressZero,
+        //         numberOf: 0
+        //     }
+        // }
+    ],
     prizes: [
         {
             unlockLevels: [],
