@@ -38,21 +38,48 @@ const config = {
             weighting: 1,
             name: "1st Place",
             prize: hre.ethers.utils.parseEther("170"),
-            nfts: []
+            nfts: [],
+            toolboxes: 0,
+            requiredAttributes: [
+                // {
+                //     requiredAttribute: {
+                //         key: "Charm",
+                //         value: "Engine"
+                //     }
+                // }
+            ]
         },
         {
             unlockLevels: [],
             weighting: 1,
             name: "2nd Place",
             prize: hre.ethers.utils.parseEther("80"),
-            nfts: []
+            nfts: [],
+            toolboxes: 0,
+            requiredAttributes: [
+                // {
+                //     requiredAttribute: {
+                //         key: "Charm",
+                //         value: "Engine"
+                //     }
+                // }
+            ]
         },
         {
             unlockLevels: [],
             weighting: 1,
             name: "3rd Place",
             prize: hre.ethers.utils.parseEther("40"),
-            nfts: []
+            nfts: [],
+            toolboxes: 0,
+            requiredAttributes: [
+                // {
+                //     requiredAttribute: {
+                //         key: "Charm",
+                //         value: "Engine"
+                //     }
+                // }
+            ]
         }
     ],
     entry: hre.ethers.utils.parseEther("10"),
@@ -60,7 +87,7 @@ const config = {
     cooldown: 20 ,  
     reward: hre.ethers.utils.parseEther("10"),
     nftRewards: [],
-    toolboxes: 0,
+    toolboxRewards: 1,
     maxCompletions: 10
 }
 
