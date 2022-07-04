@@ -46,7 +46,8 @@ export declare namespace IMissions {
     prize: PromiseOrValue<BigNumberish>;
     nftRewards: INftDispenser.NftStruct[];
     nftPrizes: INftDispenser.NftStruct[];
-    toolboxes: PromiseOrValue<BigNumberish>;
+    toolboxRewards: PromiseOrValue<BigNumberish>;
+    toolboxPrizes: PromiseOrValue<BigNumberish>;
   };
 
   export type ResultViewStructOutput = [
@@ -55,6 +56,7 @@ export declare namespace IMissions {
     BigNumber,
     INftDispenser.NftStructOutput[],
     INftDispenser.NftStructOutput[],
+    BigNumber,
     BigNumber
   ] & {
     name: string;
@@ -62,7 +64,8 @@ export declare namespace IMissions {
     prize: BigNumber;
     nftRewards: INftDispenser.NftStructOutput[];
     nftPrizes: INftDispenser.NftStructOutput[];
-    toolboxes: BigNumber;
+    toolboxRewards: BigNumber;
+    toolboxPrizes: BigNumber;
   };
 
   export type AttributeStruct = {

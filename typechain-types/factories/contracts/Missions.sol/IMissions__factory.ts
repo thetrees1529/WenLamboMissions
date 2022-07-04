@@ -128,7 +128,12 @@ const _abi = [
           },
           {
             internalType: "uint256",
-            name: "toolboxes",
+            name: "toolboxRewards",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "toolboxPrizes",
             type: "uint256",
           },
         ],
