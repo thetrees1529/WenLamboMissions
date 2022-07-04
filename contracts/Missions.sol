@@ -103,7 +103,8 @@ interface IMissions {
         uint prize;
         INftDispenser.Nft[] nftRewards;
         INftDispenser.Nft[] nftPrizes;
-        uint toolboxes;
+        uint toolboxRewards;
+        uint toolboxPrizes;
     }
     struct MissionConfig {
         string description;
@@ -248,7 +249,7 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         LamboMissionData storage lamboMissionData = lamboData.missionData[lamboData.currentMission];
         lamboMissionData.completions ++;
         
-        emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, ResultView(prizeName, missionConfig.reward, prize, nftRewards, nftPrizes, toolboxes), lamboData.cooldownEndsAt);
+        emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, ResultView(prizeName, missionConfig.reward, prize, nftRewards, nftPrizes, missionConfig.toolboxRewards, toolboxes), lamboData.cooldownEndsAt);
 
     }
     function withdraw() external override onlyOwner {
