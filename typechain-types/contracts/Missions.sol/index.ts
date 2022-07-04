@@ -2,7 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { ILambos } from "./ILambos";
+export type { IMetadata } from "./IMetadata";
 export type { IMissions } from "./IMissions";
 export type { INftDispenser } from "./INftDispenser";
+export type { IToolboxes } from "./IToolboxes";
 export type { IWallet } from "./IWallet";
 export type { Missions } from "./Missions";

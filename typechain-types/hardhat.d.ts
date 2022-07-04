@@ -37,6 +37,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ILambos__factory>;
     getContractFactory(
+      name: "IMetadata",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IMetadata__factory>;
+    getContractFactory(
       name: "IMissions",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IMissions__factory>;
@@ -44,6 +48,10 @@ declare module "hardhat/types/runtime" {
       name: "INftDispenser",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.INftDispenser__factory>;
+    getContractFactory(
+      name: "IToolboxes",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IToolboxes__factory>;
     getContractFactory(
       name: "IWallet",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -92,6 +100,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.ILambos>;
     getContractAt(
+      name: "IMetadata",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IMetadata>;
+    getContractAt(
       name: "IMissions",
       address: string,
       signer?: ethers.Signer
@@ -101,6 +114,11 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.INftDispenser>;
+    getContractAt(
+      name: "IToolboxes",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IToolboxes>;
     getContractAt(
       name: "IWallet",
       address: string,

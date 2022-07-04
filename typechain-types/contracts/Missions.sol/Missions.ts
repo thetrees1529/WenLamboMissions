@@ -46,6 +46,7 @@ export declare namespace IMissions {
     prize: PromiseOrValue<BigNumberish>;
     nftRewards: INftDispenser.NftStruct[];
     nftPrizes: INftDispenser.NftStruct[];
+    toolboxes: PromiseOrValue<BigNumberish>;
   };
 
   export type ResultViewStructOutput = [
@@ -53,14 +54,34 @@ export declare namespace IMissions {
     BigNumber,
     BigNumber,
     INftDispenser.NftStructOutput[],
-    INftDispenser.NftStructOutput[]
+    INftDispenser.NftStructOutput[],
+    BigNumber
   ] & {
     name: string;
     reward: BigNumber;
     prize: BigNumber;
     nftRewards: INftDispenser.NftStructOutput[];
     nftPrizes: INftDispenser.NftStructOutput[];
+    toolboxes: BigNumber;
   };
+
+  export type AttributeStruct = {
+    key: PromiseOrValue<string>;
+    value: PromiseOrValue<string>;
+  };
+
+  export type AttributeStructOutput = [string, string] & {
+    key: string;
+    value: string;
+  };
+
+  export type RequiredAttributeStruct = {
+    requiredAttribute: IMissions.AttributeStruct;
+  };
+
+  export type RequiredAttributeStructOutput = [
+    IMissions.AttributeStructOutput
+  ] & { requiredAttribute: IMissions.AttributeStructOutput };
 
   export type LevelStruct = {
     stat: PromiseOrValue<string>;
@@ -114,12 +135,6 @@ export declare namespace IMissions {
     IMissions.NftBalanceStructOutput
   ] & { nftBalanceRequirement: IMissions.NftBalanceStructOutput };
 
-  export type UnlockLevelStruct = { unlockLevel: IMissions.LevelStruct };
-
-  export type UnlockLevelStructOutput = [IMissions.LevelStructOutput] & {
-    unlockLevel: IMissions.LevelStructOutput;
-  };
-
   export type NftPrizeStruct = {
     dispenser: PromiseOrValue<string>;
     numberOf: PromiseOrValue<BigNumberish>;
@@ -131,29 +146,36 @@ export declare namespace IMissions {
   };
 
   export type PrizeStruct = {
-    unlockLevels: IMissions.UnlockLevelStruct[];
+    unlockLevels: IMissions.MinLevelStruct[];
+    requiredAttributes: IMissions.RequiredAttributeStruct[];
     weighting: PromiseOrValue<BigNumberish>;
     name: PromiseOrValue<string>;
     prize: PromiseOrValue<BigNumberish>;
     nfts: IMissions.NftPrizeStruct[];
+    toolboxes: PromiseOrValue<BigNumberish>;
   };
 
   export type PrizeStructOutput = [
-    IMissions.UnlockLevelStructOutput[],
+    IMissions.MinLevelStructOutput[],
+    IMissions.RequiredAttributeStructOutput[],
     BigNumber,
     string,
     BigNumber,
-    IMissions.NftPrizeStructOutput[]
+    IMissions.NftPrizeStructOutput[],
+    BigNumber
   ] & {
-    unlockLevels: IMissions.UnlockLevelStructOutput[];
+    unlockLevels: IMissions.MinLevelStructOutput[];
+    requiredAttributes: IMissions.RequiredAttributeStructOutput[];
     weighting: BigNumber;
     name: string;
     prize: BigNumber;
     nfts: IMissions.NftPrizeStructOutput[];
+    toolboxes: BigNumber;
   };
 
   export type MissionConfigStruct = {
     description: PromiseOrValue<string>;
+    requiredAttributes: IMissions.RequiredAttributeStruct[];
     minLevels: IMissions.MinLevelStruct[];
     minCompletions: IMissions.MinCompletionsStruct[];
     nftBalanceRequirements: IMissions.NftBalanceRequirementStruct[];
@@ -163,11 +185,13 @@ export declare namespace IMissions {
     cooldown: PromiseOrValue<BigNumberish>;
     reward: PromiseOrValue<BigNumberish>;
     nftRewards: IMissions.NftPrizeStruct[];
+    toolboxRewards: PromiseOrValue<BigNumberish>;
     maxCompletions: PromiseOrValue<BigNumberish>;
   };
 
   export type MissionConfigStructOutput = [
     string,
+    IMissions.RequiredAttributeStructOutput[],
     IMissions.MinLevelStructOutput[],
     IMissions.MinCompletionsStructOutput[],
     IMissions.NftBalanceRequirementStructOutput[],
@@ -177,9 +201,11 @@ export declare namespace IMissions {
     BigNumber,
     BigNumber,
     IMissions.NftPrizeStructOutput[],
+    BigNumber,
     BigNumber
   ] & {
     description: string;
+    requiredAttributes: IMissions.RequiredAttributeStructOutput[];
     minLevels: IMissions.MinLevelStructOutput[];
     minCompletions: IMissions.MinCompletionsStructOutput[];
     nftBalanceRequirements: IMissions.NftBalanceRequirementStructOutput[];
@@ -189,6 +215,7 @@ export declare namespace IMissions {
     cooldown: BigNumber;
     reward: BigNumber;
     nftRewards: IMissions.NftPrizeStructOutput[];
+    toolboxRewards: BigNumber;
     maxCompletions: BigNumber;
   };
 }
@@ -217,7 +244,7 @@ export interface MissionsInterface extends utils.Interface {
     "pause()": FunctionFragment;
     "paused()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
-    "setMissionConfig(string,(string,((string,uint256))[],((string,uint256))[],((address,uint256))[],(((string,uint256))[],uint256,string,uint256,(address,uint256)[])[],uint256,uint256,uint256,uint256,(address,uint256)[],uint256))": FunctionFragment;
+    "setMissionConfig(string,(string,((string,string))[],((string,uint256))[],((string,uint256))[],((address,uint256))[],(((string,uint256))[],((string,string))[],uint256,string,uint256,(address,uint256)[],uint256)[],uint256,uint256,uint256,uint256,(address,uint256)[],uint256,uint256))": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "unpause()": FunctionFragment;
     "withdraw()": FunctionFragment;

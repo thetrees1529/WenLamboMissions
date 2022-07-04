@@ -126,6 +126,11 @@ const _abi = [
             name: "nftPrizes",
             type: "tuple[]",
           },
+          {
+            internalType: "uint256",
+            name: "toolboxes",
+            type: "uint256",
+          },
         ],
         indexed: false,
         internalType: "struct IMissions.ResultView",
@@ -196,6 +201,30 @@ const _abi = [
                 components: [
                   {
                     internalType: "string",
+                    name: "key",
+                    type: "string",
+                  },
+                  {
+                    internalType: "string",
+                    name: "value",
+                    type: "string",
+                  },
+                ],
+                internalType: "struct IMissions.Attribute",
+                name: "requiredAttribute",
+                type: "tuple",
+              },
+            ],
+            internalType: "struct IMissions.RequiredAttribute[]",
+            name: "requiredAttributes",
+            type: "tuple[]",
+          },
+          {
+            components: [
+              {
+                components: [
+                  {
+                    internalType: "string",
                     name: "stat",
                     type: "string",
                   },
@@ -280,12 +309,36 @@ const _abi = [
                       },
                     ],
                     internalType: "struct IMissions.Level",
-                    name: "unlockLevel",
+                    name: "minLevel",
                     type: "tuple",
                   },
                 ],
-                internalType: "struct IMissions.UnlockLevel[]",
+                internalType: "struct IMissions.MinLevel[]",
                 name: "unlockLevels",
+                type: "tuple[]",
+              },
+              {
+                components: [
+                  {
+                    components: [
+                      {
+                        internalType: "string",
+                        name: "key",
+                        type: "string",
+                      },
+                      {
+                        internalType: "string",
+                        name: "value",
+                        type: "string",
+                      },
+                    ],
+                    internalType: "struct IMissions.Attribute",
+                    name: "requiredAttribute",
+                    type: "tuple",
+                  },
+                ],
+                internalType: "struct IMissions.RequiredAttribute[]",
+                name: "requiredAttributes",
                 type: "tuple[]",
               },
               {
@@ -319,6 +372,11 @@ const _abi = [
                 internalType: "struct IMissions.NftPrize[]",
                 name: "nfts",
                 type: "tuple[]",
+              },
+              {
+                internalType: "uint256",
+                name: "toolboxes",
+                type: "uint256",
               },
             ],
             internalType: "struct IMissions.Prize[]",
@@ -361,6 +419,11 @@ const _abi = [
             internalType: "struct IMissions.NftPrize[]",
             name: "nftRewards",
             type: "tuple[]",
+          },
+          {
+            internalType: "uint256",
+            name: "toolboxRewards",
+            type: "uint256",
           },
           {
             internalType: "uint256",
@@ -427,6 +490,30 @@ const _abi = [
                 components: [
                   {
                     internalType: "string",
+                    name: "key",
+                    type: "string",
+                  },
+                  {
+                    internalType: "string",
+                    name: "value",
+                    type: "string",
+                  },
+                ],
+                internalType: "struct IMissions.Attribute",
+                name: "requiredAttribute",
+                type: "tuple",
+              },
+            ],
+            internalType: "struct IMissions.RequiredAttribute[]",
+            name: "requiredAttributes",
+            type: "tuple[]",
+          },
+          {
+            components: [
+              {
+                components: [
+                  {
+                    internalType: "string",
                     name: "stat",
                     type: "string",
                   },
@@ -511,12 +598,36 @@ const _abi = [
                       },
                     ],
                     internalType: "struct IMissions.Level",
-                    name: "unlockLevel",
+                    name: "minLevel",
                     type: "tuple",
                   },
                 ],
-                internalType: "struct IMissions.UnlockLevel[]",
+                internalType: "struct IMissions.MinLevel[]",
                 name: "unlockLevels",
+                type: "tuple[]",
+              },
+              {
+                components: [
+                  {
+                    components: [
+                      {
+                        internalType: "string",
+                        name: "key",
+                        type: "string",
+                      },
+                      {
+                        internalType: "string",
+                        name: "value",
+                        type: "string",
+                      },
+                    ],
+                    internalType: "struct IMissions.Attribute",
+                    name: "requiredAttribute",
+                    type: "tuple",
+                  },
+                ],
+                internalType: "struct IMissions.RequiredAttribute[]",
+                name: "requiredAttributes",
                 type: "tuple[]",
               },
               {
@@ -550,6 +661,11 @@ const _abi = [
                 internalType: "struct IMissions.NftPrize[]",
                 name: "nfts",
                 type: "tuple[]",
+              },
+              {
+                internalType: "uint256",
+                name: "toolboxes",
+                type: "uint256",
               },
             ],
             internalType: "struct IMissions.Prize[]",
@@ -592,6 +708,11 @@ const _abi = [
             internalType: "struct IMissions.NftPrize[]",
             name: "nftRewards",
             type: "tuple[]",
+          },
+          {
+            internalType: "uint256",
+            name: "toolboxRewards",
+            type: "uint256",
           },
           {
             internalType: "uint256",

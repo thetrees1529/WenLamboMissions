@@ -20,10 +20,14 @@ export type { IERC165 } from "./@openzeppelin/contracts/utils/introspection/IERC
 export { IERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/IERC165__factory";
 export type { ILambos } from "./contracts/Missions.sol/ILambos";
 export { ILambos__factory } from "./factories/contracts/Missions.sol/ILambos__factory";
+export type { IMetadata } from "./contracts/Missions.sol/IMetadata";
+export { IMetadata__factory } from "./factories/contracts/Missions.sol/IMetadata__factory";
 export type { IMissions } from "./contracts/Missions.sol/IMissions";
 export { IMissions__factory } from "./factories/contracts/Missions.sol/IMissions__factory";
 export type { INftDispenser } from "./contracts/Missions.sol/INftDispenser";
 export { INftDispenser__factory } from "./factories/contracts/Missions.sol/INftDispenser__factory";
+export type { IToolboxes } from "./contracts/Missions.sol/IToolboxes";
+export { IToolboxes__factory } from "./factories/contracts/Missions.sol/IToolboxes__factory";
 export type { IWallet } from "./contracts/Missions.sol/IWallet";
 export { IWallet__factory } from "./factories/contracts/Missions.sol/IWallet__factory";
 export type { Missions } from "./contracts/Missions.sol/Missions";
