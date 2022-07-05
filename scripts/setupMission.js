@@ -6,7 +6,9 @@ const config = {
         missionDetails: "this is the mission details",
         rewardDetails: "this is the reward details",
         cooldownDetails: "this is the cooldown details",
-        subtitle: "this is the subtitle"
+        subtitle: "this is the subtitle",
+        videoLocation: "/example/video/location",
+        iconLocation: "/example/icon/location"
     }),
     requiredAttributes: [
         // {
