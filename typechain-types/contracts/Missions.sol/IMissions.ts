@@ -231,6 +231,7 @@ export interface IMissionsInterface extends utils.Interface {
     "getMissionEntryCount(string,uint256)": FunctionFragment;
     "pause()": FunctionFragment;
     "setMissionConfig(string,(string,((string,string))[],((string,uint256))[],((string,uint256))[],((address,uint256))[],(((string,uint256))[],((string,string))[],uint256,string,uint256,(address,uint256)[],uint256)[],uint256,uint256,uint256,uint256,(address,uint256)[],uint256,uint256))": FunctionFragment;
+    "setWallet(address)": FunctionFragment;
     "unpause()": FunctionFragment;
     "withdraw()": FunctionFragment;
   };
@@ -243,6 +244,7 @@ export interface IMissionsInterface extends utils.Interface {
       | "getMissionEntryCount"
       | "pause"
       | "setMissionConfig"
+      | "setWallet"
       | "unpause"
       | "withdraw"
   ): FunctionFragment;
@@ -268,6 +270,10 @@ export interface IMissionsInterface extends utils.Interface {
     functionFragment: "setMissionConfig",
     values: [PromiseOrValue<string>, IMissions.MissionConfigStruct]
   ): string;
+  encodeFunctionData(
+    functionFragment: "setWallet",
+    values: [PromiseOrValue<string>]
+  ): string;
   encodeFunctionData(functionFragment: "unpause", values?: undefined): string;
   encodeFunctionData(functionFragment: "withdraw", values?: undefined): string;
 
@@ -292,6 +298,7 @@ export interface IMissionsInterface extends utils.Interface {
     functionFragment: "setMissionConfig",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "setWallet", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "unpause", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
@@ -403,6 +410,11 @@ export interface IMissions extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    setWallet(
+      wallet: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     unpause(
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
@@ -444,6 +456,11 @@ export interface IMissions extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  setWallet(
+    wallet: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   unpause(
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
@@ -480,6 +497,11 @@ export interface IMissions extends BaseContract {
     setMissionConfig(
       mission: PromiseOrValue<string>,
       missionConfig: IMissions.MissionConfigStruct,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setWallet(
+      wallet: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -554,6 +576,11 @@ export interface IMissions extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    setWallet(
+      wallet: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     unpause(
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
@@ -593,6 +620,11 @@ export interface IMissions extends BaseContract {
     setMissionConfig(
       mission: PromiseOrValue<string>,
       missionConfig: IMissions.MissionConfigStruct,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setWallet(
+      wallet: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

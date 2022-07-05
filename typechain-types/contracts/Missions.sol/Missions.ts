@@ -248,6 +248,7 @@ export interface MissionsInterface extends utils.Interface {
     "paused()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "setMissionConfig(string,(string,((string,string))[],((string,uint256))[],((string,uint256))[],((address,uint256))[],(((string,uint256))[],((string,string))[],uint256,string,uint256,(address,uint256)[],uint256)[],uint256,uint256,uint256,uint256,(address,uint256)[],uint256,uint256))": FunctionFragment;
+    "setWallet(address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "unpause()": FunctionFragment;
     "withdraw()": FunctionFragment;
@@ -266,6 +267,7 @@ export interface MissionsInterface extends utils.Interface {
       | "paused"
       | "renounceOwnership"
       | "setMissionConfig"
+      | "setWallet"
       | "transferOwnership"
       | "unpause"
       | "withdraw"
@@ -307,6 +309,10 @@ export interface MissionsInterface extends utils.Interface {
     values: [PromiseOrValue<string>, IMissions.MissionConfigStruct]
   ): string;
   encodeFunctionData(
+    functionFragment: "setWallet",
+    values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
     functionFragment: "transferOwnership",
     values: [PromiseOrValue<string>]
   ): string;
@@ -345,6 +351,7 @@ export interface MissionsInterface extends utils.Interface {
     functionFragment: "setMissionConfig",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "setWallet", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
     data: BytesLike
@@ -547,6 +554,11 @@ export interface Missions extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    setWallet(
+      wallet: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     transferOwnership(
       newOwner: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -610,6 +622,11 @@ export interface Missions extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  setWallet(
+    wallet: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   transferOwnership(
     newOwner: PromiseOrValue<string>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -664,6 +681,11 @@ export interface Missions extends BaseContract {
     setMissionConfig(
       mission: PromiseOrValue<string>,
       missionConfig: IMissions.MissionConfigStruct,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setWallet(
+      wallet: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -787,6 +809,11 @@ export interface Missions extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    setWallet(
+      wallet: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     transferOwnership(
       newOwner: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -848,6 +875,11 @@ export interface Missions extends BaseContract {
     setMissionConfig(
       mission: PromiseOrValue<string>,
       missionConfig: IMissions.MissionConfigStruct,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setWallet(
+      wallet: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

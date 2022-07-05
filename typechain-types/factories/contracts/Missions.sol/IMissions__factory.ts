@@ -736,6 +736,19 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "contract IWallet",
+        name: "wallet",
+        type: "address",
+      },
+    ],
+    name: "setWallet",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "unpause",
     outputs: [],

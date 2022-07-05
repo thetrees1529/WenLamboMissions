@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as missionsSol from "./Missions.sol";
+export { TempVault__factory } from "./TempVault__factory";

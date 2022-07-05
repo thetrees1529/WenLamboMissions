@@ -124,6 +124,7 @@ interface IMissions {
     event MissionConfigSet(string mission);
     event MissionEntered(uint tokenId, string mission, uint entryId, uint endsAt);
     event MissionFinished(uint tokenId, string mission, uint entryId, ResultView result, uint cooldownEndsAt);
+    function setWallet(IWallet wallet) external;
     function pause() external;
     function unpause() external;
     function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external;
@@ -146,6 +147,9 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         _wallet = wallet;
         _metadata = metadata;
         _toolboxes = toolboxes;
+    }
+    function setWallet(IWallet wallet) external override onlyOwner {
+        _wallet = wallet;
     }
     struct LamboMissionData {
         uint completions;
