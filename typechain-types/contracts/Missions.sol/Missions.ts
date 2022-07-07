@@ -242,7 +242,9 @@ export interface MissionsInterface extends utils.Interface {
     "enterMission(uint256,string)": FunctionFragment;
     "finishMission(uint256)": FunctionFragment;
     "getMissionConfig(string)": FunctionFragment;
+    "getMissionEarnings(string,uint256)": FunctionFragment;
     "getMissionEntryCount(string,uint256)": FunctionFragment;
+    "getTotalEarnings(uint256)": FunctionFragment;
     "owner()": FunctionFragment;
     "pause()": FunctionFragment;
     "paused()": FunctionFragment;
@@ -261,7 +263,9 @@ export interface MissionsInterface extends utils.Interface {
       | "enterMission"
       | "finishMission"
       | "getMissionConfig"
+      | "getMissionEarnings"
       | "getMissionEntryCount"
+      | "getTotalEarnings"
       | "owner"
       | "pause"
       | "paused"
@@ -294,8 +298,16 @@ export interface MissionsInterface extends utils.Interface {
     values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
+    functionFragment: "getMissionEarnings",
+    values: [PromiseOrValue<string>, PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getMissionEntryCount",
     values: [PromiseOrValue<string>, PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getTotalEarnings",
+    values: [PromiseOrValue<BigNumberish>]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(functionFragment: "pause", values?: undefined): string;
@@ -337,7 +349,15 @@ export interface MissionsInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getMissionEarnings",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getMissionEntryCount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getTotalEarnings",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -530,8 +550,19 @@ export interface Missions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[IMissions.MissionConfigStructOutput]>;
 
+    getMissionEarnings(
+      mission: PromiseOrValue<string>,
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
     getMissionEntryCount(
       mission: PromiseOrValue<string>,
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    getTotalEarnings(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
@@ -598,8 +629,19 @@ export interface Missions extends BaseContract {
     overrides?: CallOverrides
   ): Promise<IMissions.MissionConfigStructOutput>;
 
+  getMissionEarnings(
+    mission: PromiseOrValue<string>,
+    tokenId: PromiseOrValue<BigNumberish>,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
   getMissionEntryCount(
     mission: PromiseOrValue<string>,
+    tokenId: PromiseOrValue<BigNumberish>,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  getTotalEarnings(
     tokenId: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
@@ -664,8 +706,19 @@ export interface Missions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<IMissions.MissionConfigStructOutput>;
 
+    getMissionEarnings(
+      mission: PromiseOrValue<string>,
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getMissionEntryCount(
       mission: PromiseOrValue<string>,
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getTotalEarnings(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -785,8 +838,19 @@ export interface Missions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    getMissionEarnings(
+      mission: PromiseOrValue<string>,
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getMissionEntryCount(
       mission: PromiseOrValue<string>,
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getTotalEarnings(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -854,8 +918,19 @@ export interface Missions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    getMissionEarnings(
+      mission: PromiseOrValue<string>,
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getMissionEntryCount(
       mission: PromiseOrValue<string>,
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getTotalEarnings(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;

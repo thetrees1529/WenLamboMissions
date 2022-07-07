@@ -130,6 +130,8 @@ interface IMissions {
     function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external;
     function getMissionConfig(string calldata mission) external view returns(MissionConfig memory);
     function getMissionEntryCount(string calldata mission, uint tokenId) external view returns(uint);
+    function getMissionEarnings(string calldata mission, uint tokenId) external view returns(uint);
+    function getTotalEarnings(uint tokenId) external view returns(uint);
     function enterMission(uint tokenId, string calldata mission) external;
     function finishMission(uint tokenId) external;
 
@@ -153,6 +155,7 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
     }
     struct LamboMissionData {
         uint completions;
+        uint earnings;
         uint nonce;
     }
     struct LamboData {
@@ -160,6 +163,7 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         string currentMission;
         uint missionEndsAt;
         uint cooldownEndsAt;
+        uint totalEarnings;
         mapping(string => LamboMissionData) missionData;
     }
     mapping(string => MissionConfig) private _missionConfigs;
@@ -179,6 +183,12 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
     }
     function getMissionEntryCount(string calldata mission, uint tokenId) external view override returns(uint) {
         return _lamboData[tokenId].missionData[mission].completions;
+    }
+    function getMissionEarnings(string calldata mission, uint tokenId) external view override returns(uint) {
+        return _lamboData[tokenId].missionData[mission].earnings;
+    }
+    function getTotalEarnings(uint tokenId) external view override returns(uint) {
+        return _lamboData[tokenId].totalEarnings;
     }
     function enterMission(uint tokenId, string calldata mission) external override ownsLambo(tokenId) nonReentrant whenNotPaused {
         LamboData storage lamboData = _lamboData[tokenId];
@@ -252,6 +262,10 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         lamboData.cooldownEndsAt = block.timestamp + missionConfig.cooldown;
         LamboMissionData storage lamboMissionData = lamboData.missionData[lamboData.currentMission];
         lamboMissionData.completions ++;
+
+        uint earnings = prize + missionConfig.reward;
+        lamboMissionData.earnings += earnings;
+        lamboData.totalEarnings += earnings;
         
         emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, ResultView(prizeName, missionConfig.reward, prize, nftRewards, nftPrizes, missionConfig.toolboxRewards, toolboxes), lamboData.cooldownEndsAt);
 
