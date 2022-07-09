@@ -223,7 +223,7 @@ export declare namespace IMissions {
   };
 }
 
-export declare namespace IERC20Payments {
+export declare namespace ERC20Payments {
   export type PayeeStruct = {
     addr: PromiseOrValue<string>;
     weighting: PromiseOrValue<BigNumberish>;
@@ -237,19 +237,19 @@ export declare namespace IERC20Payments {
 
 export interface MissionsInterface extends utils.Interface {
   functions: {
-    "addPayee((address,uint256))": FunctionFragment;
-    "deletePayees()": FunctionFragment;
     "enterMission(uint256,string)": FunctionFragment;
     "finishMission(uint256)": FunctionFragment;
     "getMissionConfig(string)": FunctionFragment;
     "getMissionEarnings(string,uint256)": FunctionFragment;
     "getMissionEntryCount(string,uint256)": FunctionFragment;
+    "getPayees()": FunctionFragment;
     "getTotalEarnings(uint256)": FunctionFragment;
     "owner()": FunctionFragment;
     "pause()": FunctionFragment;
     "paused()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "setMissionConfig(string,(string,((string,string))[],((string,uint256))[],((string,uint256))[],((address,uint256))[],(((string,uint256))[],((string,string))[],uint256,string,uint256,(address,uint256)[],uint256)[],uint256,uint256,uint256,uint256,(address,uint256)[],uint256,uint256))": FunctionFragment;
+    "setPayees((address,uint256)[])": FunctionFragment;
     "setWallet(address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "unpause()": FunctionFragment;
@@ -258,33 +258,25 @@ export interface MissionsInterface extends utils.Interface {
 
   getFunction(
     nameOrSignatureOrTopic:
-      | "addPayee"
-      | "deletePayees"
       | "enterMission"
       | "finishMission"
       | "getMissionConfig"
       | "getMissionEarnings"
       | "getMissionEntryCount"
+      | "getPayees"
       | "getTotalEarnings"
       | "owner"
       | "pause"
       | "paused"
       | "renounceOwnership"
       | "setMissionConfig"
+      | "setPayees"
       | "setWallet"
       | "transferOwnership"
       | "unpause"
       | "withdraw"
   ): FunctionFragment;
 
-  encodeFunctionData(
-    functionFragment: "addPayee",
-    values: [IERC20Payments.PayeeStruct]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "deletePayees",
-    values?: undefined
-  ): string;
   encodeFunctionData(
     functionFragment: "enterMission",
     values: [PromiseOrValue<BigNumberish>, PromiseOrValue<string>]
@@ -305,6 +297,7 @@ export interface MissionsInterface extends utils.Interface {
     functionFragment: "getMissionEntryCount",
     values: [PromiseOrValue<string>, PromiseOrValue<BigNumberish>]
   ): string;
+  encodeFunctionData(functionFragment: "getPayees", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "getTotalEarnings",
     values: [PromiseOrValue<BigNumberish>]
@@ -321,6 +314,10 @@ export interface MissionsInterface extends utils.Interface {
     values: [PromiseOrValue<string>, IMissions.MissionConfigStruct]
   ): string;
   encodeFunctionData(
+    functionFragment: "setPayees",
+    values: [ERC20Payments.PayeeStruct[]]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setWallet",
     values: [PromiseOrValue<string>]
   ): string;
@@ -331,11 +328,6 @@ export interface MissionsInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "unpause", values?: undefined): string;
   encodeFunctionData(functionFragment: "withdraw", values?: undefined): string;
 
-  decodeFunctionResult(functionFragment: "addPayee", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "deletePayees",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "enterMission",
     data: BytesLike
@@ -356,6 +348,7 @@ export interface MissionsInterface extends utils.Interface {
     functionFragment: "getMissionEntryCount",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "getPayees", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getTotalEarnings",
     data: BytesLike
@@ -371,6 +364,7 @@ export interface MissionsInterface extends utils.Interface {
     functionFragment: "setMissionConfig",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "setPayees", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "setWallet", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
@@ -380,36 +374,25 @@ export interface MissionsInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
   events: {
-    "Initialised(address)": EventFragment;
     "MissionConfigSet(string)": EventFragment;
     "MissionEntered(uint256,string,uint256,uint256)": EventFragment;
     "MissionFinished(uint256,string,uint256,tuple,uint256)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "Paused(address)": EventFragment;
-    "PayeeAdded(tuple)": EventFragment;
     "PayeesDeleted()": EventFragment;
-    "Payment(address,uint256)": EventFragment;
+    "PayeesSet(tuple[])": EventFragment;
     "Unpaused(address)": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "Initialised"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "MissionConfigSet"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "MissionEntered"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "MissionFinished"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Paused"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "PayeeAdded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "PayeesDeleted"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Payment"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "PayeesSet"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Unpaused"): EventFragment;
 }
-
-export interface InitialisedEventObject {
-  token: string;
-}
-export type InitialisedEvent = TypedEvent<[string], InitialisedEventObject>;
-
-export type InitialisedEventFilter = TypedEventFilter<InitialisedEvent>;
 
 export interface MissionConfigSetEventObject {
   mission: string;
@@ -468,28 +451,20 @@ export type PausedEvent = TypedEvent<[string], PausedEventObject>;
 
 export type PausedEventFilter = TypedEventFilter<PausedEvent>;
 
-export interface PayeeAddedEventObject {
-  payee: IERC20Payments.PayeeStructOutput;
-}
-export type PayeeAddedEvent = TypedEvent<
-  [IERC20Payments.PayeeStructOutput],
-  PayeeAddedEventObject
->;
-
-export type PayeeAddedEventFilter = TypedEventFilter<PayeeAddedEvent>;
-
 export interface PayeesDeletedEventObject {}
 export type PayeesDeletedEvent = TypedEvent<[], PayeesDeletedEventObject>;
 
 export type PayeesDeletedEventFilter = TypedEventFilter<PayeesDeletedEvent>;
 
-export interface PaymentEventObject {
-  to: string;
-  payment: BigNumber;
+export interface PayeesSetEventObject {
+  payees: ERC20Payments.PayeeStructOutput[];
 }
-export type PaymentEvent = TypedEvent<[string, BigNumber], PaymentEventObject>;
+export type PayeesSetEvent = TypedEvent<
+  [ERC20Payments.PayeeStructOutput[]],
+  PayeesSetEventObject
+>;
 
-export type PaymentEventFilter = TypedEventFilter<PaymentEvent>;
+export type PayeesSetEventFilter = TypedEventFilter<PayeesSetEvent>;
 
 export interface UnpausedEventObject {
   account: string;
@@ -525,15 +500,6 @@ export interface Missions extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    addPayee(
-      payee: IERC20Payments.PayeeStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
-    deletePayees(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
     enterMission(
       tokenId: PromiseOrValue<BigNumberish>,
       mission: PromiseOrValue<string>,
@@ -562,6 +528,10 @@ export interface Missions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
+    getPayees(
+      overrides?: CallOverrides
+    ): Promise<[ERC20Payments.PayeeStructOutput[]]>;
+
     getTotalEarnings(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -585,6 +555,11 @@ export interface Missions extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    setPayees(
+      payees: ERC20Payments.PayeeStruct[],
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     setWallet(
       wallet: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -603,15 +578,6 @@ export interface Missions extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
   };
-
-  addPayee(
-    payee: IERC20Payments.PayeeStruct,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  deletePayees(
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
 
   enterMission(
     tokenId: PromiseOrValue<BigNumberish>,
@@ -641,6 +607,10 @@ export interface Missions extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
+  getPayees(
+    overrides?: CallOverrides
+  ): Promise<ERC20Payments.PayeeStructOutput[]>;
+
   getTotalEarnings(
     tokenId: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
@@ -664,6 +634,11 @@ export interface Missions extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  setPayees(
+    payees: ERC20Payments.PayeeStruct[],
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   setWallet(
     wallet: PromiseOrValue<string>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -683,13 +658,6 @@ export interface Missions extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    addPayee(
-      payee: IERC20Payments.PayeeStruct,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    deletePayees(overrides?: CallOverrides): Promise<void>;
-
     enterMission(
       tokenId: PromiseOrValue<BigNumberish>,
       mission: PromiseOrValue<string>,
@@ -718,6 +686,10 @@ export interface Missions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    getPayees(
+      overrides?: CallOverrides
+    ): Promise<ERC20Payments.PayeeStructOutput[]>;
+
     getTotalEarnings(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -737,6 +709,11 @@ export interface Missions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    setPayees(
+      payees: ERC20Payments.PayeeStruct[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     setWallet(
       wallet: PromiseOrValue<string>,
       overrides?: CallOverrides
@@ -753,9 +730,6 @@ export interface Missions extends BaseContract {
   };
 
   filters: {
-    "Initialised(address)"(token?: null): InitialisedEventFilter;
-    Initialised(token?: null): InitialisedEventFilter;
-
     "MissionConfigSet(string)"(mission?: null): MissionConfigSetEventFilter;
     MissionConfigSet(mission?: null): MissionConfigSetEventFilter;
 
@@ -799,29 +773,17 @@ export interface Missions extends BaseContract {
     "Paused(address)"(account?: null): PausedEventFilter;
     Paused(account?: null): PausedEventFilter;
 
-    "PayeeAdded(tuple)"(payee?: null): PayeeAddedEventFilter;
-    PayeeAdded(payee?: null): PayeeAddedEventFilter;
-
     "PayeesDeleted()"(): PayeesDeletedEventFilter;
     PayeesDeleted(): PayeesDeletedEventFilter;
 
-    "Payment(address,uint256)"(to?: null, payment?: null): PaymentEventFilter;
-    Payment(to?: null, payment?: null): PaymentEventFilter;
+    "PayeesSet(tuple[])"(payees?: null): PayeesSetEventFilter;
+    PayeesSet(payees?: null): PayeesSetEventFilter;
 
     "Unpaused(address)"(account?: null): UnpausedEventFilter;
     Unpaused(account?: null): UnpausedEventFilter;
   };
 
   estimateGas: {
-    addPayee(
-      payee: IERC20Payments.PayeeStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    deletePayees(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
     enterMission(
       tokenId: PromiseOrValue<BigNumberish>,
       mission: PromiseOrValue<string>,
@@ -849,6 +811,8 @@ export interface Missions extends BaseContract {
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    getPayees(overrides?: CallOverrides): Promise<BigNumber>;
 
     getTotalEarnings(
       tokenId: PromiseOrValue<BigNumberish>,
@@ -873,6 +837,11 @@ export interface Missions extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    setPayees(
+      payees: ERC20Payments.PayeeStruct[],
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     setWallet(
       wallet: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -893,15 +862,6 @@ export interface Missions extends BaseContract {
   };
 
   populateTransaction: {
-    addPayee(
-      payee: IERC20Payments.PayeeStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    deletePayees(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
     enterMission(
       tokenId: PromiseOrValue<BigNumberish>,
       mission: PromiseOrValue<string>,
@@ -930,6 +890,8 @@ export interface Missions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    getPayees(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     getTotalEarnings(
       tokenId: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -950,6 +912,11 @@ export interface Missions extends BaseContract {
     setMissionConfig(
       mission: PromiseOrValue<string>,
       missionConfig: IMissions.MissionConfigStruct,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setPayees(
+      payees: ERC20Payments.PayeeStruct[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

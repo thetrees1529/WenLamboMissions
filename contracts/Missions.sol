@@ -153,6 +153,9 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
     function setWallet(IWallet wallet) external override onlyOwner {
         _wallet = wallet;
     }
+    function setPayees(ERC20Payments.Payee[] calldata payees) external onlyOwner {
+        _setPayees(payees);
+    }
     struct LamboMissionData {
         uint completions;
         uint earnings;

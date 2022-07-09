@@ -7,8 +7,6 @@ import type {
   BigNumberish,
   BytesLike,
   CallOverrides,
-  ContractTransaction,
-  Overrides,
   PopulatedTransaction,
   Signer,
   utils,
@@ -27,7 +25,7 @@ import type {
   PromiseOrValue,
 } from "../../../../common";
 
-export declare namespace IERC20Payments {
+export declare namespace ERC20Payments {
   export type PayeeStruct = {
     addr: PromiseOrValue<string>;
     weighting: PromiseOrValue<BigNumberish>;
@@ -41,111 +39,38 @@ export declare namespace IERC20Payments {
 
 export interface ERC20PaymentsInterface extends utils.Interface {
   functions: {
-    "addPayee((address,uint256))": FunctionFragment;
-    "deletePayees()": FunctionFragment;
-    "owner()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
+    "getPayees()": FunctionFragment;
   };
 
-  getFunction(
-    nameOrSignatureOrTopic:
-      | "addPayee"
-      | "deletePayees"
-      | "owner"
-      | "renounceOwnership"
-      | "transferOwnership"
-  ): FunctionFragment;
+  getFunction(nameOrSignatureOrTopic: "getPayees"): FunctionFragment;
 
-  encodeFunctionData(
-    functionFragment: "addPayee",
-    values: [IERC20Payments.PayeeStruct]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "deletePayees",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "renounceOwnership",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "transferOwnership",
-    values: [PromiseOrValue<string>]
-  ): string;
+  encodeFunctionData(functionFragment: "getPayees", values?: undefined): string;
 
-  decodeFunctionResult(functionFragment: "addPayee", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "deletePayees",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "transferOwnership",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "getPayees", data: BytesLike): Result;
 
   events: {
-    "Initialised(address)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
-    "PayeeAdded(tuple)": EventFragment;
     "PayeesDeleted()": EventFragment;
-    "Payment(address,uint256)": EventFragment;
+    "PayeesSet(tuple[])": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "Initialised"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "PayeeAdded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "PayeesDeleted"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Payment"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "PayeesSet"): EventFragment;
 }
-
-export interface InitialisedEventObject {
-  token: string;
-}
-export type InitialisedEvent = TypedEvent<[string], InitialisedEventObject>;
-
-export type InitialisedEventFilter = TypedEventFilter<InitialisedEvent>;
-
-export interface OwnershipTransferredEventObject {
-  previousOwner: string;
-  newOwner: string;
-}
-export type OwnershipTransferredEvent = TypedEvent<
-  [string, string],
-  OwnershipTransferredEventObject
->;
-
-export type OwnershipTransferredEventFilter =
-  TypedEventFilter<OwnershipTransferredEvent>;
-
-export interface PayeeAddedEventObject {
-  payee: IERC20Payments.PayeeStructOutput;
-}
-export type PayeeAddedEvent = TypedEvent<
-  [IERC20Payments.PayeeStructOutput],
-  PayeeAddedEventObject
->;
-
-export type PayeeAddedEventFilter = TypedEventFilter<PayeeAddedEvent>;
 
 export interface PayeesDeletedEventObject {}
 export type PayeesDeletedEvent = TypedEvent<[], PayeesDeletedEventObject>;
 
 export type PayeesDeletedEventFilter = TypedEventFilter<PayeesDeletedEvent>;
 
-export interface PaymentEventObject {
-  to: string;
-  payment: BigNumber;
+export interface PayeesSetEventObject {
+  payees: ERC20Payments.PayeeStructOutput[];
 }
-export type PaymentEvent = TypedEvent<[string, BigNumber], PaymentEventObject>;
+export type PayeesSetEvent = TypedEvent<
+  [ERC20Payments.PayeeStructOutput[]],
+  PayeesSetEventObject
+>;
 
-export type PaymentEventFilter = TypedEventFilter<PaymentEvent>;
+export type PayeesSetEventFilter = TypedEventFilter<PayeesSetEvent>;
 
 export interface ERC20Payments extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -174,129 +99,34 @@ export interface ERC20Payments extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    addPayee(
-      payee: IERC20Payments.PayeeStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
-    deletePayees(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<[string]>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
-    transferOwnership(
-      newOwner: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
+    getPayees(
+      overrides?: CallOverrides
+    ): Promise<[ERC20Payments.PayeeStructOutput[]]>;
   };
 
-  addPayee(
-    payee: IERC20Payments.PayeeStruct,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  deletePayees(
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  owner(overrides?: CallOverrides): Promise<string>;
-
-  renounceOwnership(
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  transferOwnership(
-    newOwner: PromiseOrValue<string>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
+  getPayees(
+    overrides?: CallOverrides
+  ): Promise<ERC20Payments.PayeeStructOutput[]>;
 
   callStatic: {
-    addPayee(
-      payee: IERC20Payments.PayeeStruct,
+    getPayees(
       overrides?: CallOverrides
-    ): Promise<void>;
-
-    deletePayees(overrides?: CallOverrides): Promise<void>;
-
-    owner(overrides?: CallOverrides): Promise<string>;
-
-    renounceOwnership(overrides?: CallOverrides): Promise<void>;
-
-    transferOwnership(
-      newOwner: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<ERC20Payments.PayeeStructOutput[]>;
   };
 
   filters: {
-    "Initialised(address)"(token?: null): InitialisedEventFilter;
-    Initialised(token?: null): InitialisedEventFilter;
-
-    "OwnershipTransferred(address,address)"(
-      previousOwner?: PromiseOrValue<string> | null,
-      newOwner?: PromiseOrValue<string> | null
-    ): OwnershipTransferredEventFilter;
-    OwnershipTransferred(
-      previousOwner?: PromiseOrValue<string> | null,
-      newOwner?: PromiseOrValue<string> | null
-    ): OwnershipTransferredEventFilter;
-
-    "PayeeAdded(tuple)"(payee?: null): PayeeAddedEventFilter;
-    PayeeAdded(payee?: null): PayeeAddedEventFilter;
-
     "PayeesDeleted()"(): PayeesDeletedEventFilter;
     PayeesDeleted(): PayeesDeletedEventFilter;
 
-    "Payment(address,uint256)"(to?: null, payment?: null): PaymentEventFilter;
-    Payment(to?: null, payment?: null): PaymentEventFilter;
+    "PayeesSet(tuple[])"(payees?: null): PayeesSetEventFilter;
+    PayeesSet(payees?: null): PayeesSetEventFilter;
   };
 
   estimateGas: {
-    addPayee(
-      payee: IERC20Payments.PayeeStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    deletePayees(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    transferOwnership(
-      newOwner: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
+    getPayees(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    addPayee(
-      payee: IERC20Payments.PayeeStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    deletePayees(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    transferOwnership(
-      newOwner: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
+    getPayees(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }
