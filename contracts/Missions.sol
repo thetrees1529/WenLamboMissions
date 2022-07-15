@@ -242,7 +242,7 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         for(uint i; i < prizes.length; i ++) {
             Prize storage prizeInfo = prizes[i];
             if(_meetsMinLevels(tokenId, prizeInfo.unlockLevels) && _hasRequiredAttributes(tokenId, prizeInfo.requiredAttributes)) {
-                uint randomNumber = uint(sha256(abi.encode(tokenId, _useNonce(tokenId, lamboData.currentMission))));
+                uint randomNumber = uint(sha256(abi.encode(lamboData.currentMission, tokenId, _useNonce(tokenId, lamboData.currentMission))));
                 uint randomNumberUnderWeightings = randomNumber % totalWeightings;
                 if(randomNumberUnderWeightings < prizeInfo.weighting) {
                     _wallet.withdrawAmount(msg.sender, prizeInfo.prize);
