@@ -55,6 +55,23 @@ interface IMetadata {
     function getMetadata(uint nft, string calldata key) external view returns(string memory);
 
 }
+interface IGarageManager {  
+    struct GarageDataView {
+        uint256 speed; // hVille earning speed (per day)
+        uint256 unlocked;
+        uint256 locked;
+        uint256 lockedInterest;
+        uint256 totalSpent;
+        uint256 totalEverClaimed;
+        uint8 pitCrew; // 0 or 1
+        uint8 crewChief; // 0 -> 3
+        uint8 mechanic; // 0 -> 3
+        uint8 gasman; // 0 -> 3
+        uint8 tireChanger; // 0 -> 3
+    }
+    enum UT {pit, chief, mech, gas, tire}
+    function getTokenAttributes(uint256 _tokenId) external view returns (GarageDataView memory);
+}
 interface IMissions {
     struct Level {
         string stat;
@@ -63,6 +80,13 @@ interface IMissions {
     struct Attribute {
         string key;
         string value;
+    }
+    struct GarageLevel {
+        IGarageManager.UT attr;
+        uint8 level;
+    }
+    struct RequiredGarageLevel {
+        GarageLevel requiredGarageLevel;
     }
     struct RequiredAttribute {
         Attribute requiredAttribute;
@@ -89,8 +113,7 @@ interface IMissions {
         uint numberOf;
     }
     struct Prize {
-        MinLevel[] unlockLevels;
-        RequiredAttribute[] requiredAttributes;
+        Requirement[] requirements;
         uint weighting;
         string name;
         uint prize;
@@ -106,12 +129,17 @@ interface IMissions {
         uint toolboxRewards;
         uint toolboxPrizes;
     }
-    struct MissionConfig {
-        string description;
+    //ONLY ONE REQUIREMENT FROM ANY OF THE ARRAYS NEEDS TO BE MET 
+    struct Requirement {
         RequiredAttribute[] requiredAttributes;
         MinLevel[] minLevels;
         MinCompletions[] minCompletions;
         NftBalanceRequirement[] nftBalanceRequirements;
+        RequiredGarageLevel[] requiredGarageLevels;
+    }
+    struct MissionConfig {
+        string description;
+        Requirement[] requirements;
         Prize[] prizes;
         uint entry;
         uint duration;
@@ -144,11 +172,13 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
     IWallet private _wallet;
     IMetadata private _metadata;
     IToolboxes private _toolboxes;
-    constructor(ILambos lambos, IWallet wallet, IMetadata metadata, IToolboxes toolboxes) ERC20Payments(IERC20(wallet.hVilleAddress())) {
+    IGarageManager private _garageManager;
+    constructor(ILambos lambos, IWallet wallet, IMetadata metadata, IToolboxes toolboxes, IGarageManager garageManager) ERC20Payments(IERC20(wallet.hVilleAddress())) {
         _lambos = lambos;
         _wallet = wallet;
         _metadata = metadata;
         _toolboxes = toolboxes;
+        _garageManager = garageManager;
     }
     function setWallet(IWallet wallet) external override onlyOwner {
         _wallet = wallet;
@@ -201,17 +231,7 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         IERC20(_wallet.hVilleAddress()).safeTransferFrom(msg.sender, address(this), missionConfig.entry);
         _makePayment(missionConfig.entry);
 
-        MinLevel[] storage minLevels = missionConfig.minLevels;
-        require(_meetsMinLevels(tokenId, minLevels), "Lambo does not meet all the minimum level requirements for this mission.");
-
-        MinCompletions[] storage minCompletions = missionConfig.minCompletions;
-        require(_meetsMinCompletions(tokenId, minCompletions), "Lambo does not meet all the minimum completions of other missions for this mission.");
-
-        NftBalanceRequirement[] storage nftBalanceRequirements = missionConfig.nftBalanceRequirements;
-        require(_meetsNftBalanceRequirements(msg.sender, nftBalanceRequirements), "Lambo does not meet all the nft balance requirements for this mission.");
-
-        RequiredAttribute[] storage requiredAttributes = missionConfig.requiredAttributes;
-        require(_hasRequiredAttributes(tokenId, requiredAttributes));
+        require(_meetsRequirements(msg.sender, tokenId, missionConfig.requirements), "Does not meet the requirements for this mission.");
 
         lamboData.missionEndsAt = block.timestamp + missionConfig.duration;
         lamboData.currentMission = mission;
@@ -233,15 +253,17 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         uint totalWeightings;
         for(uint i; i < prizes.length; i ++) {
             Prize storage prizeInfo = prizes[i];
-            if (_meetsMinLevels(tokenId, prizeInfo.unlockLevels) && _hasRequiredAttributes(tokenId, prizeInfo.requiredAttributes)) totalWeightings += prizeInfo.weighting;
+            if (_meetsRequirements(msg.sender, tokenId, prizeInfo.requirements)) totalWeightings += prizeInfo.weighting;
         }
+        
         uint prize;
         uint toolboxes;
         string memory prizeName;
         INftDispenser.Nft[] memory nftPrizes;
         for(uint i; i < prizes.length; i ++) {
             Prize storage prizeInfo = prizes[i];
-            if(_meetsMinLevels(tokenId, prizeInfo.unlockLevels) && _hasRequiredAttributes(tokenId, prizeInfo.requiredAttributes)) {
+            bool meetsRequirements = _meetsRequirements(msg.sender, tokenId, prizeInfo.requirements);
+            if (meetsRequirements) {
                 uint randomNumber = uint(sha256(abi.encode(lamboData.currentMission, tokenId, _useNonce(tokenId, lamboData.currentMission))));
                 uint randomNumberUnderWeightings = randomNumber % totalWeightings;
                 if(randomNumberUnderWeightings < prizeInfo.weighting) {
@@ -266,9 +288,12 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
         LamboMissionData storage lamboMissionData = lamboData.missionData[lamboData.currentMission];
         lamboMissionData.completions ++;
 
-        uint earnings = prize + missionConfig.reward;
-        lamboMissionData.earnings += earnings;
-        lamboData.totalEarnings += earnings;
+        {
+            uint earnings = prize + missionConfig.reward;
+            lamboMissionData.earnings += earnings;
+            lamboData.totalEarnings += earnings;
+        }
+
         
         emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, ResultView(prizeName, missionConfig.reward, prize, nftRewards, nftPrizes, missionConfig.toolboxRewards, toolboxes), lamboData.cooldownEndsAt);
 
@@ -308,34 +333,66 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
             _toolboxes.airdropToolbox(to);
         }
     }
-    function _hasRequiredAttributes(uint tokenId, RequiredAttribute[] storage requiredAttributes) private view returns(bool) {
+
+    function _meetsRequirements(address account, uint tokenId, Requirement[] storage requirements) private view returns(bool) {
+        for(uint i; i < requirements.length; i ++) {
+            Requirement storage requirement = requirements[i];
+            if (
+                !_hasAnyOfRequiredAttributes(tokenId, requirement.requiredAttributes) &&
+                !_meetsAnyOfRequiredGarageLevels(tokenId, requirement.requiredGarageLevels) &&
+                !_meetsAnyOfNftBalanceRequirements(account, requirement.nftBalanceRequirements) &&
+                !_meetsAnyOfMinCompletions(tokenId, requirement.minCompletions) &&
+                !_meetsAnyOfMinLevels(tokenId, requirement.minLevels)
+            ) return false;
+        }
+        return true;
+    }
+    
+    function _hasAnyOfRequiredAttributes(uint tokenId, RequiredAttribute[] storage requiredAttributes) private view returns(bool) {
         for(uint i; i < requiredAttributes.length; i ++) {
             RequiredAttribute storage requiredAttribute = requiredAttributes[i];
-            if(sha256(bytes(_metadata.getMetadata(tokenId, requiredAttribute.requiredAttribute.key))) != sha256(bytes(requiredAttribute.requiredAttribute.value))) return false;
+            if(sha256(bytes(_metadata.getMetadata(tokenId, requiredAttribute.requiredAttribute.key))) == sha256(bytes(requiredAttribute.requiredAttribute.value))) return true;
         }
-        return true;
+        return false;
     }
-    function _meetsNftBalanceRequirements(address account, NftBalanceRequirement[] storage nftBalanceRequirements) private view returns(bool) {
+    function _meetsAnyOfRequiredGarageLevels(uint tokenId, RequiredGarageLevel[] storage requiredGarageLevels) private view returns(bool) {
+        for(uint i; i < requiredGarageLevels.length; i ++) {
+            GarageLevel storage requiredGarageLevel = requiredGarageLevels[i].requiredGarageLevel;
+            IGarageManager.UT uT = requiredGarageLevel.attr;
+            IGarageManager.GarageDataView memory data = _garageManager.getTokenAttributes(tokenId);
+            uint level;
+
+            if(uT == IGarageManager.UT.pit) level = data.pitCrew;
+            else if(uT == IGarageManager.UT.chief) level = data.crewChief;
+            else if(uT == IGarageManager.UT.mech) level = data.mechanic;
+            else if(uT == IGarageManager.UT.gas) level = data.gasman;
+            else if(uT == IGarageManager.UT.tire) level = data.tireChanger;
+
+            if (level >= requiredGarageLevel.level) return true;
+        }
+        return false;
+    }
+    function _meetsAnyOfNftBalanceRequirements(address account, NftBalanceRequirement[] storage nftBalanceRequirements) private view returns(bool) {
         for(uint i; i < nftBalanceRequirements.length; i ++) {
             NftBalance storage nftBalanceRequirement = nftBalanceRequirements[i].nftBalanceRequirement;
-            if(nftBalanceRequirement.nft.balanceOf(account) < nftBalanceRequirement.numberOf) return false;
+            if(nftBalanceRequirement.nft.balanceOf(account) >= nftBalanceRequirement.numberOf) return true;
         }
-        return true;
+        return false;
     }
-    function _meetsMinCompletions(uint tokenId, MinCompletions[] storage minCompletions) private view returns(bool) {
+    function _meetsAnyOfMinCompletions(uint tokenId, MinCompletions[] storage minCompletions) private view returns(bool) {
         LamboData storage lamboData = _lamboData[tokenId];
         for(uint i; i < minCompletions.length; i ++) {
             Completions storage minCompletion = minCompletions[i].minCompletions;
-            if(lamboData.missionData[minCompletion.mission].completions < minCompletion.numberOf) return false;
+            if(lamboData.missionData[minCompletion.mission].completions >= minCompletion.numberOf) return true;
         }
-        return true;
+        return false;
     }
-    function _meetsMinLevels(uint tokenId, MinLevel[] storage minLevels) private view returns(bool) {
+    function _meetsAnyOfMinLevels(uint tokenId, MinLevel[] storage minLevels) private view returns(bool) {
         for(uint i; i < minLevels.length; i ++) {
             Level storage minLevel = minLevels[i].minLevel;
-            if(_getValueOfStat(tokenId, minLevel.stat) < minLevel.value) return false;
+            if(_getValueOfStat(tokenId, minLevel.stat) >= minLevel.value) return true;
         }
-        return true;
+        return false;
     }
     modifier ownsLambo(uint tokenId) {
         require(msg.sender == _lambos.ownerOf(tokenId), "You don't own this lambo.");
