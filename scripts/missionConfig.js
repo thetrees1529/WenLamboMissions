@@ -44,6 +44,11 @@ module.exports = {
             requiredGarageLevels: [
                 {
                     requiredGarageLevel: {
+                        /*
+                            0 - pitcrew
+                            1 - crewChief
+                            2 - mechanic
+                        */
                         attr: 0,
                         level: 2
                     }
