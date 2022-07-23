@@ -60,7 +60,9 @@ module.exports = {
         }
     ],
     prizes: [
-
+        {
+            
+        }
     ],
     entry: hre.ethers.utils.parseEther("10"),
     duration: 20 ,
