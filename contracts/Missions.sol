@@ -1,15 +1,12 @@
-
-//SPDX-License-Identifier: UNLICENSED
+//SPDX-License-Identifier: UNLICENCED
 pragma solidity 0.8.15;
 
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "utils/contracts/payments/ERC20Payments.sol";
-
 interface ILambos is IERC721{
 
     struct StatisticView {
@@ -27,16 +24,18 @@ interface IWallet {
     function withdrawAmount(address _to, uint256 _amount) external;
     function hVilleAddress() external view returns(address);
 }
-interface INftDispenser {
-    struct Nft {
-        IERC721 nft;
-        uint tokenId;
-    }
-    function collectionAddress() external view returns(address);
-    function dispenseNftsTo(address to, uint numberOf) external returns(Nft[] memory);
-}
 interface IToolboxes {
+    struct ToolboxView {
+        uint256 toolboxToken;
+        bool isOpened;
+        bool isUsed;
+        uint8 upgradeType;
+        uint8 upgradeRarity;
+        uint256 upgradeAmount;
+        address owner;
+    }
     function airdropToolbox(address to) external;
+    function getToolboxes(address _addr) external view returns (ToolboxView[] memory);
 }
 interface IMetadata {
 
@@ -72,64 +71,29 @@ interface IGarageManager {
     enum UT {pit, chief, mech, gas, tire}
     function getTokenAttributes(uint256 _tokenId) external view returns (GarageDataView memory);
 }
-interface IMissions {
-    struct Level {
+contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
+    using Counters for Counters.Counter;
+    using SafeERC20 for IERC20;
+    struct MinLevel {
         string stat;
         uint value;
     }
-    struct Attribute {
+    struct RequiredAttribute {
         string key;
         string value;
     }
-    struct GarageLevel {
+    struct RequiredGarageLevel {
         IGarageManager.UT attr;
         uint8 level;
     }
-    struct RequiredGarageLevel {
-        GarageLevel requiredGarageLevel;
-    }
-    struct RequiredAttribute {
-        Attribute requiredAttribute;
-    }
-    struct MinLevel {
-        Level minLevel;
-    }
-    struct Completions {
-        string mission;
-        uint numberOf;
-    }
     struct MinCompletions {
-        Completions minCompletions;
-    }
-    struct NftBalance {
-        IERC721 nft;
+        uint missionId;
         uint numberOf;
     }
     struct NftBalanceRequirement {
-        NftBalance nftBalanceRequirement;
-    }
-    struct NftPrize {
-        INftDispenser dispenser;
+        IERC721 nft;
         uint numberOf;
     }
-    struct Prize {
-        Requirement[] requirements;
-        uint weighting;
-        string name;
-        uint prize;
-        NftPrize[] nfts;
-        uint toolboxes;
-    }
-    struct ResultView {
-        string name;
-        uint reward;
-        uint prize;
-        INftDispenser.Nft[] nftRewards;
-        INftDispenser.Nft[] nftPrizes;
-        uint toolboxRewards;
-        uint toolboxPrizes;
-    }
-    //ONLY ONE REQUIREMENT FROM ANY OF THE ARRAYS NEEDS TO BE MET 
     struct Requirement {
         RequiredAttribute[] requiredAttributes;
         MinLevel[] minLevels;
@@ -137,227 +101,357 @@ interface IMissions {
         NftBalanceRequirement[] nftBalanceRequirements;
         RequiredGarageLevel[] requiredGarageLevels;
     }
-    struct MissionConfig {
-        string description;
+    struct NftReward {
+        IERC721Enumerable collection;
+        uint numberOf;
+    }
+    struct Nft {
+        IERC721 collection;
+        uint tokenId;
+    }
+    struct Toolbox {
+        uint8 upgradeType;
+        uint8 upgradeRarity;   
+        uint256 upgradeAmount;
+    }
+    struct Pouch {
+        IERC20 token;
+        uint value;
+    }
+    struct RewardItems {
+        uint prize;
+        NftReward[] nfts;
+        Pouch[] pouches;
+        uint toolboxes;
+    }
+    struct Reward {
+        string name;
+        RewardItems items;
+    }
+    struct RewardViewItems {
+        uint prize;
+        Nft[] nfts;
+        Pouch[] pouches;
+        Toolbox[] toolboxes;
+    }
+    struct RewardView {
+        string name;
+        RewardViewItems items;
+    }
+    struct PrizeOption {
+        uint weighting;
+        Reward prize;
+    }
+    struct PrizeConfig {
         Requirement[] requirements;
-        Prize[] prizes;
-        uint entry;
+        uint maxHits;
+        PrizeOption prizeOption;
+    }
+    struct ResultView {
+        RewardView rewards;
+        RewardView prizes;
+    }
+    struct LamboData {
+        bool inMission;
+        uint missionId;
+        uint entryId;
+        uint missionEndsAt;
+        uint cooldownEndsAt;
+        uint totalEarnings;
+    }
+    struct LamboMissionData {
+        uint completions;
+        uint earnings;
+        mapping(uint => uint) prizeHits;
+    }
+    struct MissionConfig {
+        string meta;
+        Requirement[] requirements;
+        Reward reward;
+        PrizeConfig[] prizes;
         uint duration;
         uint cooldown;
-        uint reward;
-        NftPrize[] nftRewards;
-        uint toolboxRewards;
         uint maxCompletions;
+        uint entry;
     }
-    event MissionConfigSet(string mission);
-    event MissionEntered(uint tokenId, string mission, uint entryId, uint endsAt);
-    event MissionFinished(uint tokenId, string mission, uint entryId, ResultView result, uint cooldownEndsAt);
-    function setWallet(IWallet wallet) external;
-    function pause() external;
-    function unpause() external;
-    function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external;
-    function getMissionConfig(string calldata mission) external view returns(MissionConfig memory);
-    function getMissionEntryCount(string calldata mission, uint tokenId) external view returns(uint);
-    function getMissionEarnings(string calldata mission, uint tokenId) external view returns(uint);
-    function getTotalEarnings(uint tokenId) external view returns(uint);
-    function enterMission(uint tokenId, string calldata mission) external;
-    function finishMission(uint tokenId) external;
+    struct MissionView {
+        bool removed;
+        MissionConfig config;
+    }
+    struct PrizeOptionView {
+        uint prizeId;
+        PrizeOption prizeOption;
+    }
+    struct MissionData {
+        MissionConfig config;
+        bool removed;
+        mapping(uint => LamboMissionData) lamboMissionData;
+    }
 
-    function withdraw() external;
-}
+    event MissionCreated(uint missionId);
+    event MissionRemoved(uint missionId);
+    event MissionEntered(uint tokenId, uint missionId, uint entryId, uint endsAt);
+    event MissionFinished(uint entryId, uint resultId, uint cooldownEndsAt);
 
-contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payments {
-    using SafeERC20 for IERC20;
-    ILambos private _lambos;
-    IWallet private _wallet;
-    IMetadata private _metadata;
-    IToolboxes private _toolboxes;
-    IGarageManager private _garageManager;
-    constructor(ILambos lambos, IWallet wallet, IMetadata metadata, IToolboxes toolboxes, IGarageManager garageManager) ERC20Payments(IERC20(wallet.hVilleAddress())) {
-        _lambos = lambos;
+    constructor(ILambos collection, IWallet wallet, IMetadata metadata, IToolboxes toolboxes, IGarageManager garageManager) ERC20Payments(IERC20(wallet.hVilleAddress())) {
+        _collection = collection;
         _wallet = wallet;
         _metadata = metadata;
         _toolboxes = toolboxes;
         _garageManager = garageManager;
     }
-    function setWallet(IWallet wallet) external override onlyOwner {
-        _wallet = wallet;
-    }
+
+    ILambos private _collection;
+    IWallet private _wallet;
+    IMetadata private _metadata;
+    IToolboxes private _toolboxes;
+    IGarageManager private _garageManager;
+
+    MissionData[] private _missions;
+    mapping(uint => LamboData) private _lambos;
+    ResultView[] private _results;
+
+    Counters.Counter private _entryIds;
+
     function setPayees(ERC20Payments.Payee[] calldata payees) external onlyOwner {
         _setPayees(payees);
     }
-    struct LamboMissionData {
-        uint completions;
-        uint earnings;
-        uint nonce;
-    }
-    struct LamboData {
-        bool inMission;
-        string currentMission;
-        uint missionEndsAt;
-        uint cooldownEndsAt;
-        uint totalEarnings;
-        mapping(string => LamboMissionData) missionData;
-    }
-    mapping(string => MissionConfig) private _missionConfigs;
-    mapping(uint => LamboData) private _lamboData;
-    function pause() external override onlyOwner {
-        _pause();
-    }
-    function unpause() external override onlyOwner {
-        _unpause();
-    }
-    function setMissionConfig(string calldata mission, MissionConfig calldata missionConfig) external override onlyOwner nonReentrant whenNotPaused {
-        _missionConfigs[mission] = missionConfig;
-        emit MissionConfigSet(mission);
-    }
-    function getMissionConfig(string calldata mission) external view override returns(MissionConfig memory) {
-        return _missionConfigs[mission];
-    }
-    function getMissionEntryCount(string calldata mission, uint tokenId) external view override returns(uint) {
-        return _lamboData[tokenId].missionData[mission].completions;
-    }
-    function getMissionEarnings(string calldata mission, uint tokenId) external view override returns(uint) {
-        return _lamboData[tokenId].missionData[mission].earnings;
-    }
-    function getTotalEarnings(uint tokenId) external view override returns(uint) {
-        return _lamboData[tokenId].totalEarnings;
-    }
-    function enterMission(uint tokenId, string calldata mission) external override ownsLambo(tokenId) nonReentrant whenNotPaused {
-        LamboData storage lamboData = _lamboData[tokenId];
-        require(!lamboData.inMission, "Lambo is in a mission currently.");
-        require(block.timestamp >= lamboData.cooldownEndsAt, "There is a pending cooldown for this lambo.");
-        MissionConfig storage missionConfig = _missionConfigs[mission];
-        IERC20(_wallet.hVilleAddress()).safeTransferFrom(msg.sender, address(this), missionConfig.entry);
-        _makePayment(missionConfig.entry);
 
-        require(_meetsRequirements(msg.sender, tokenId, missionConfig.requirements), "Does not meet the requirements for this mission.");
-
-        lamboData.missionEndsAt = block.timestamp + missionConfig.duration;
-        lamboData.currentMission = mission;
-        lamboData.inMission = true;
-
-        uint completions = lamboData.missionData[lamboData.currentMission].completions;
-        require(completions < missionConfig.maxCompletions, "This lambo has completed this mission too many times.");
-        emit MissionEntered(tokenId, mission, completions, lamboData.missionEndsAt);
+    function createMission(MissionConfig calldata config) external nonReentrant onlyOwner {
+        uint missionId = _missions.length;
+        MissionData storage mission = _missions.push();
+        mission.config = config;
+        emit MissionCreated(missionId);
     }
-    function finishMission(uint tokenId) external override ownsLambo(tokenId) nonReentrant whenNotPaused {
-        LamboData storage lamboData = _lamboData[tokenId];
-        require(lamboData.inMission, "Lambo is not in a mission.");
-        require(block.timestamp >= lamboData.missionEndsAt, "Lambo is still in the mission.");
-        MissionConfig storage missionConfig = _missionConfigs[lamboData.currentMission];
-        
-        
-        Prize[] storage prizes = missionConfig.prizes;
-        
+
+    function removeMission(uint missionId) external nonReentrant onlyOwner {
+        MissionData storage mission = _missions[missionId];
+        require(!mission.removed, "Already removed.");
+        mission.removed = true;
+        emit MissionRemoved(missionId);
+    }
+
+    function enterMission(uint tokenId, uint missionId) external nonReentrant ownsLambo(tokenId) {
+        MissionData storage mission = _missions[missionId];
+        require(!mission.removed, "Mission was removed.");
+
+        LamboData storage lambo = _lambos[tokenId];
+        require(!lambo.inMission, "Lambo is in a mission.");
+        require(block.timestamp >= lambo.cooldownEndsAt, "Lambo is under cooldown.");
+
+        MissionConfig storage config = mission.config;
+        LamboMissionData storage lamboMissionData = mission.lamboMissionData[tokenId];
+        require(lamboMissionData.completions < config.maxCompletions, "Max completions hit.");
+
+        lambo.inMission = true;
+        lambo.missionId = missionId;
+        lambo.entryId = _newEntryId();
+        lambo.missionEndsAt = block.timestamp + config.duration;
+
+        address account = msg.sender;
+        require(_meetsRequirements(account, tokenId, config.requirements), "Have not met the requirements.");
+
+        _takePayment(account, config.entry);
+
+        emit MissionEntered(tokenId, missionId, lambo.entryId, lambo.missionEndsAt);
+    }
+    //storage variable because memoery arrays don't support push
+    PrizeOptionView[] private _qualifiedPrizes;
+    function endMission(uint tokenId) external nonReentrant ownsLambo(tokenId) {
+        address account = msg.sender;
+        LamboData storage lambo = _lambos[tokenId];
+        require(lambo.inMission, "Lambo is not in a mission.");
+        require(block.timestamp >= lambo.missionEndsAt, "MIssion has not finished yet.");
+
+        MissionData storage mission = _missions[lambo.missionId];
+        LamboMissionData storage lamboMissionData = mission.lamboMissionData[tokenId];
+        MissionConfig storage config = mission.config;
+        PrizeConfig[] storage prizes = config.prizes;
+
+        RewardView memory rewards = _dispenseReward(account, config.reward);
+        lamboMissionData.earnings += rewards.items.prize;
+        lambo.totalEarnings += rewards.items.prize;
+
         uint totalWeightings;
+
         for(uint i; i < prizes.length; i ++) {
-            Prize storage prizeInfo = prizes[i];
-            if (_meetsRequirements(msg.sender, tokenId, prizeInfo.requirements)) totalWeightings += prizeInfo.weighting;
-        }
-        
-        uint prize;
-        uint toolboxes;
-        string memory prizeName;
-        INftDispenser.Nft[] memory nftPrizes;
-        for(uint i; i < prizes.length; i ++) {
-            Prize storage prizeInfo = prizes[i];
-            bool meetsRequirements = _meetsRequirements(msg.sender, tokenId, prizeInfo.requirements);
-            if (meetsRequirements) {
-                uint randomNumber = uint(sha256(abi.encode(lamboData.currentMission, tokenId, _useNonce(tokenId, lamboData.currentMission))));
-                uint randomNumberUnderWeightings = randomNumber % totalWeightings;
-                if(randomNumberUnderWeightings < prizeInfo.weighting) {
-                    _wallet.withdrawAmount(msg.sender, prizeInfo.prize);
-                    nftPrizes = _dispenseNfts(msg.sender, prizeInfo.nfts);
-                    prizeName = prizeInfo.name;
-                    prize = prizeInfo.prize;
-                    _dispenseToolboxes(msg.sender, prizeInfo.toolboxes);
-                    toolboxes = prizeInfo.toolboxes;
-                    break;
-                }
-                totalWeightings -= prizeInfo.weighting;
+            PrizeConfig storage prizeConfig = prizes[i];
+            if(
+                _meetsRequirements(account, tokenId, prizeConfig.requirements) &&
+                lamboMissionData.prizeHits[i] < prizeConfig.maxHits 
+            ) {
+                PrizeOption storage prizeOption = prizeConfig.prizeOption;
+                _qualifiedPrizes.push(PrizeOptionView(i, prizeOption));
+                totalWeightings += prizeOption.weighting;
             }
         }
 
-        _dispenseToolboxes(msg.sender, missionConfig.toolboxRewards);
-        
-        _wallet.withdrawAmount(msg.sender, missionConfig.reward);
-        INftDispenser.Nft[] memory nftRewards = _dispenseNfts(msg.sender, missionConfig.nftRewards);
-        lamboData.inMission = false;
-        lamboData.cooldownEndsAt = block.timestamp + missionConfig.cooldown;
-        LamboMissionData storage lamboMissionData = lamboData.missionData[lamboData.currentMission];
+        RewardView memory prize;
+        uint rInt = uint(sha256(abi.encode(lambo.missionId, tokenId, lamboMissionData.completions)));
+        for(uint i; i < _qualifiedPrizes.length; i ++) {
+            PrizeOptionView storage prizeOptionView = _qualifiedPrizes[i];
+            PrizeOption storage prizeOption = prizeOptionView.prizeOption;
+            uint value = rInt % totalWeightings;
+            if(value < prizeOption.weighting) {
+                prize = _dispenseReward(account, prizeOption.prize);
+                lamboMissionData.prizeHits[prizeOptionView.prizeId] ++;
+                lamboMissionData.earnings += prizeOption.prize.items.prize;
+                lambo.totalEarnings += prizeOption.prize.items.prize;
+                break;
+            }
+            totalWeightings -= prizeOption.weighting;
+        }
+
         lamboMissionData.completions ++;
+        lambo.inMission = false;
+        lambo.cooldownEndsAt = lambo.missionEndsAt + config.cooldown;
 
-        {
-            uint earnings = prize + missionConfig.reward;
-            lamboMissionData.earnings += earnings;
-            lamboData.totalEarnings += earnings;
+
+        uint resultId = _results.length;
+        _results.push(ResultView({
+            rewards: rewards,
+            prizes: prize
+        }));
+
+        emit MissionFinished(lambo.entryId, resultId, lambo.cooldownEndsAt);
+
+
+        //reset the storage variable for next time
+        delete _qualifiedPrizes;
+
+    }
+
+    function getMission(uint missionId) external view returns(MissionView memory){
+        MissionData storage mission = _missions[missionId];
+        return MissionView({
+            removed: mission.removed,
+            config: mission.config
+        });
+    }
+
+    function getTotalEarnings(uint tokenId) external view returns(uint) {
+        return _lambos[tokenId].totalEarnings;
+    }
+
+    function getMissionEarnings(uint tokenId, uint missionId) external view returns(uint) {
+        return _missions[missionId].lamboMissionData[tokenId].earnings;
+    }
+
+    function getResult(uint resultId) external view returns(ResultView memory) {
+        return _results[resultId];
+    }
+    function _newEntryId() private returns(uint entryId) {
+        entryId = _entryIds.current();
+        _entryIds.increment();
+    }
+    function _dispenseReward(address to, Reward storage reward) private returns(RewardView memory rewardView) {
+        RewardItems storage items = reward.items;
+        return RewardView({
+            name: reward.name,
+            items: RewardViewItems({
+                prize: _dispenseHville(to, items.prize),
+                toolboxes: _dispenseToolboxes(to, items.toolboxes),
+                pouches: _dispensePouches(to, items.pouches),
+                nfts: _dispenseNftRewards(to, items.nfts)
+            })
+        });
+    }
+
+    function _dispenseHville(address to, uint value) private returns(uint) {
+        _wallet.withdrawAmount(to, value);
+        return value;
+    }
+
+    function _dispenseToolboxes(address to, uint numberOf) private returns(Toolbox[] memory toolboxes) {
+        toolboxes = new Toolbox[](numberOf);
+        for(uint i; i < numberOf; i ++) {
+            toolboxes[i] = _dispenseToolbox(to);
         }
-
-        
-        emit MissionFinished(tokenId, lamboData.currentMission, lamboMissionData.completions - 1, ResultView(prizeName, missionConfig.reward, prize, nftRewards, nftPrizes, missionConfig.toolboxRewards, toolboxes), lamboData.cooldownEndsAt);
-
     }
-    function withdraw() external override onlyOwner {
-        IERC20(_wallet.hVilleAddress()).safeTransfer(msg.sender, IERC20(_wallet.hVilleAddress()).balanceOf(address(this)));
+    function _dispenseToolbox(address to) private returns(Toolbox memory) {
+        _toolboxes.airdropToolbox(to);
+        IToolboxes.ToolboxView[] memory toolboxViews = _toolboxes.getToolboxes(to);
+        IToolboxes.ToolboxView memory toolboxView = toolboxViews[toolboxViews.length - 1];
+        return Toolbox({
+            upgradeType: toolboxView.upgradeType,
+            upgradeRarity:toolboxView.upgradeRarity,
+            upgradeAmount:toolboxView.upgradeAmount
+        });
     }
-    function _getValueOfStat(uint tokenId, string storage key) private view returns(uint value) {
-        bytes32 keyHash = sha256(bytes(key));
-        ILambos.StatisticView[] memory statistics = _lambos.getAttributes(tokenId);
-        for(uint i; i < statistics.length; i ++) {
-            ILambos.StatisticView memory statistic = statistics[i];
-            if(sha256(bytes(statistic.statistic)) == keyHash) {
-                return statistic.value;
+
+    Nft[] private _nfts;
+    function _dispenseNftRewards(address to, NftReward[] storage nftRewards) private returns(Nft[] memory nfts) {
+        for(uint i ; i < nftRewards.length; i ++){
+            Nft[] memory temp = _dispenseNftReward(to, nftRewards[i]);
+            for(uint j; j < temp.length; j++) {
+                _nfts.push(temp[j]);
             }
         }
-    }
-    function _useNonce(uint tokenId, string storage mission) private returns(uint nonce) {
-        LamboMissionData storage lamboMissionData = _lamboData[tokenId].missionData[mission];
-        nonce = lamboMissionData.nonce;
-        lamboMissionData.nonce ++;
-    }
-    INftDispenser.Nft[] private _nfts;
-    function _dispenseNfts(address to, NftPrize[] memory nftPrizes) private returns(INftDispenser.Nft[] memory nftsDispensed) {
-        for(uint i; i < nftPrizes.length; i ++) {
-            NftPrize memory nftPrize = nftPrizes[i];
-            INftDispenser.Nft[] memory nfts = nftPrize.dispenser.dispenseNftsTo(to, nftPrize.numberOf);
-            for(uint j; j < nfts.length; j ++) {
-                _nfts.push(nfts[j]);
-            }
-        }
-        nftsDispensed = _nfts;
+        nfts = _nfts;
         delete _nfts;
     }
-    function _dispenseToolboxes(address to, uint numberOf) private {
-        for(uint i; i < numberOf; i ++) {
-            _toolboxes.airdropToolbox(to);
+
+    function _dispenseNftReward(address to, NftReward storage nftReward) private returns(Nft[] memory nfts) {
+        nfts = new Nft[](nftReward.numberOf);
+        for(uint i; i < nftReward.numberOf; i ++) {
+            uint tokenId = nftReward.collection.tokenOfOwnerByIndex(address(this),0);
+            nftReward.collection.safeTransferFrom(address(this), to, tokenId);
+            nfts[i] = Nft(nftReward.collection, tokenId);
         }
+
+    }
+
+    function _dispensePouches(address to, Pouch[] storage pouches) private returns(Pouch[] memory pouchViews){
+        pouchViews = new Pouch[](pouches.length);
+        for(uint i; i < pouches.length; i ++) {
+            pouchViews[i] = _dispensePouch(to, pouches[i]);
+        }
+    }
+
+    function _dispensePouch(address to, Pouch storage pouch) private returns(Pouch memory) {
+        pouch.token.transfer(to, pouch.value);
+        return pouch;
+    }
+
+    function _takePayment(address from, uint value) private {
+        IERC20(_wallet.hVilleAddress()).safeTransferFrom(from, address(this), value);
+        _makePayment(value);
     }
 
     function _meetsRequirements(address account, uint tokenId, Requirement[] storage requirements) private view returns(bool) {
         for(uint i; i < requirements.length; i ++) {
-            Requirement storage requirement = requirements[i];
-            if (
-                !_hasAnyOfRequiredAttributes(tokenId, requirement.requiredAttributes) &&
-                !_meetsAnyOfRequiredGarageLevels(tokenId, requirement.requiredGarageLevels) &&
-                !_meetsAnyOfNftBalanceRequirements(account, requirement.nftBalanceRequirements) &&
-                !_meetsAnyOfMinCompletions(tokenId, requirement.minCompletions) &&
-                !_meetsAnyOfMinLevels(tokenId, requirement.minLevels)
-            ) return false;
+            if (!_meetsRequirement(account, tokenId, requirements[i])) return false;
         }
         return true;
+    }
+
+    function _meetsRequirement(address account, uint tokenId, Requirement storage requirement) private view returns(bool) {
+        if (
+            !_hasAnyOfRequiredAttributes(tokenId, requirement.requiredAttributes) &&
+            !_meetsAnyOfRequiredGarageLevels(tokenId, requirement.requiredGarageLevels) &&
+            !_meetsAnyOfNftBalanceRequirements(account, requirement.nftBalanceRequirements) &&
+            !_meetsAnyOfMinCompletions(tokenId, requirement.minCompletions) &&
+            !_meetsAnyOfMinLevels(tokenId, requirement.minLevels)
+        ) return false;
+        else return true;
     }
     
     function _hasAnyOfRequiredAttributes(uint tokenId, RequiredAttribute[] storage requiredAttributes) private view returns(bool) {
         for(uint i; i < requiredAttributes.length; i ++) {
-            RequiredAttribute storage requiredAttribute = requiredAttributes[i];
-            if(sha256(bytes(_metadata.getMetadata(tokenId, requiredAttribute.requiredAttribute.key))) == sha256(bytes(requiredAttribute.requiredAttribute.value))) return true;
+            if(_hasRequiredAttribute(tokenId, requiredAttributes[i])) return true;
         }
         return false;
     }
+    function _hasRequiredAttribute(uint tokenId, RequiredAttribute storage requiredAttribute) private view returns(bool) {
+            return sha256(bytes(_metadata.getMetadata(tokenId, requiredAttribute.key))) == sha256(bytes(requiredAttribute.value));
+    }
     function _meetsAnyOfRequiredGarageLevels(uint tokenId, RequiredGarageLevel[] storage requiredGarageLevels) private view returns(bool) {
         for(uint i; i < requiredGarageLevels.length; i ++) {
-            GarageLevel storage requiredGarageLevel = requiredGarageLevels[i].requiredGarageLevel;
+            if (_meetsRequiredGarageLevel(tokenId, requiredGarageLevels[i])) return true;
+        }
+        return false;
+    }
+    function _meetsRequiredGarageLevel(uint tokenId, RequiredGarageLevel storage requiredGarageLevel) private view returns(bool) {
             IGarageManager.UT uT = requiredGarageLevel.attr;
             IGarageManager.GarageDataView memory data = _garageManager.getTokenAttributes(tokenId);
             uint level;
@@ -368,34 +462,48 @@ contract Missions is IMissions, Ownable, Pausable, ReentrancyGuard, ERC20Payment
             else if(uT == IGarageManager.UT.gas) level = data.gasman;
             else if(uT == IGarageManager.UT.tire) level = data.tireChanger;
 
-            if (level >= requiredGarageLevel.level) return true;
-        }
-        return false;
+            return level >= requiredGarageLevel.level;
     }
     function _meetsAnyOfNftBalanceRequirements(address account, NftBalanceRequirement[] storage nftBalanceRequirements) private view returns(bool) {
         for(uint i; i < nftBalanceRequirements.length; i ++) {
-            NftBalance storage nftBalanceRequirement = nftBalanceRequirements[i].nftBalanceRequirement;
-            if(nftBalanceRequirement.nft.balanceOf(account) >= nftBalanceRequirement.numberOf) return true;
+            if(_meetsNftBalanceRequirement(account, nftBalanceRequirements[i])) return true;
         }
         return false;
     }
+    function _meetsNftBalanceRequirement(address account, NftBalanceRequirement storage nftBalanceRequirement) private view returns(bool) {
+        return nftBalanceRequirement.nft.balanceOf(account) >= nftBalanceRequirement.numberOf;
+    }
     function _meetsAnyOfMinCompletions(uint tokenId, MinCompletions[] storage minCompletions) private view returns(bool) {
-        LamboData storage lamboData = _lamboData[tokenId];
         for(uint i; i < minCompletions.length; i ++) {
-            Completions storage minCompletion = minCompletions[i].minCompletions;
-            if(lamboData.missionData[minCompletion.mission].completions >= minCompletion.numberOf) return true;
+            if(_meetsMinCompletion(tokenId, minCompletions[i])) return true;
         }
         return false;
+    }
+    function _meetsMinCompletion(uint tokenId, MinCompletions storage minCompletion) private view returns(bool) {
+        return _missions[minCompletion.missionId].lamboMissionData[tokenId].completions >= minCompletion.numberOf;
     }
     function _meetsAnyOfMinLevels(uint tokenId, MinLevel[] storage minLevels) private view returns(bool) {
         for(uint i; i < minLevels.length; i ++) {
-            Level storage minLevel = minLevels[i].minLevel;
-            if(_getValueOfStat(tokenId, minLevel.stat) >= minLevel.value) return true;
+            if(_meetsMinLevel(tokenId, minLevels[i])) return true;
         }
         return false;
     }
+    function _meetsMinLevel(uint tokenId, MinLevel storage minLevel) private view returns(bool) {
+        return _getValueOfStat(tokenId, minLevel.stat) >= minLevel.value;
+    }
+    function _getValueOfStat(uint tokenId, string storage key) private view returns(uint value) {
+        bytes32 keyHash = sha256(bytes(key));
+        ILambos.StatisticView[] memory statistics = _collection.getAttributes(tokenId);
+        for(uint i; i < statistics.length; i ++) {
+            ILambos.StatisticView memory statistic = statistics[i];
+            if(sha256(bytes(statistic.statistic)) == keyHash) {
+                return statistic.value;
+            }
+        }
+    }
     modifier ownsLambo(uint tokenId) {
-        require(msg.sender == _lambos.ownerOf(tokenId), "You don't own this lambo.");
+        require(msg.sender == _collection.ownerOf(tokenId), "You don't own this lambo.");
         _;
     }
+
 }

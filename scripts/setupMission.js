@@ -1,12 +1,10 @@
-const contractAddress = require("./deployedAddress")
-const name = "HARMOVILLE'S 1ST WENLAMBO CAR SHOW"
+const contractAddress = require("./outputs/deployedAddress")
 const config = require("./missionConfig.js")
-
-
 
 
 async function main() {
     const missions = await hre.ethers.getContractAt("Missions", contractAddress)
-    await (await missions.setMissionConfig(name, config)).wait()
+    await (await missions.createMission(config)).wait()
 }
+
 main()
