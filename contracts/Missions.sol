@@ -105,6 +105,10 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         IERC721Enumerable collection;
         uint numberOf;
     }
+    struct NftRewardConfig {
+        NftReward nftReward;
+        address holder;
+    }
     struct Nft {
         IERC721 collection;
         uint tokenId;
@@ -118,10 +122,14 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         IERC20 token;
         uint value;
     }
+    struct PouchConfig {
+        Pouch pouch;
+        address holder;
+    }
     struct RewardItems {
         uint prize;
-        NftReward[] nfts;
-        Pouch[] pouches;
+        NftRewardConfig[] nfts;
+        PouchConfig[] pouches;
         uint toolboxes;
     }
     struct Reward {
@@ -380,7 +388,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     }
 
     Nft[] private _nfts;
-    function _dispenseNftRewards(address to, NftReward[] storage nftRewards) private returns(Nft[] memory nfts) {
+    function _dispenseNftRewards(address to, NftRewardConfig[] storage nftRewards) private returns(Nft[] memory nfts) {
         for(uint i ; i < nftRewards.length; i ++){
             Nft[] memory temp = _dispenseNftReward(to, nftRewards[i]);
             for(uint j; j < temp.length; j++) {
@@ -391,26 +399,26 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         delete _nfts;
     }
 
-    function _dispenseNftReward(address to, NftReward storage nftReward) private returns(Nft[] memory nfts) {
-        nfts = new Nft[](nftReward.numberOf);
-        for(uint i; i < nftReward.numberOf; i ++) {
-            uint tokenId = nftReward.collection.tokenOfOwnerByIndex(address(this),0);
-            nftReward.collection.safeTransferFrom(address(this), to, tokenId);
-            nfts[i] = Nft(nftReward.collection, tokenId);
+    function _dispenseNftReward(address to, NftRewardConfig storage nftReward) private returns(Nft[] memory nfts) {
+        nfts = new Nft[](nftReward.nftReward.numberOf);
+        for(uint i; i < nftReward.nftReward.numberOf; i ++) {
+            uint tokenId = nftReward.nftReward.collection.tokenOfOwnerByIndex(nftReward.holder,0);
+            nftReward.nftReward.collection.safeTransferFrom(nftReward.holder, to, tokenId);
+            nfts[i] = Nft(nftReward.nftReward.collection, tokenId);
         }
 
     }
 
-    function _dispensePouches(address to, Pouch[] storage pouches) private returns(Pouch[] memory pouchViews){
+    function _dispensePouches(address to, PouchConfig[] storage pouches) private returns(Pouch[] memory pouchViews){
         pouchViews = new Pouch[](pouches.length);
         for(uint i; i < pouches.length; i ++) {
             pouchViews[i] = _dispensePouch(to, pouches[i]);
         }
     }
 
-    function _dispensePouch(address to, Pouch storage pouch) private returns(Pouch memory) {
-        pouch.token.transfer(to, pouch.value);
-        return pouch;
+    function _dispensePouch(address to, PouchConfig storage pouch) private returns(Pouch memory) {
+        pouch.pouch.token.transferFrom(pouch.holder,to, pouch.pouch.value);
+        return pouch.pouch;
     }
 
     function _takePayment(address from, uint value) private {
