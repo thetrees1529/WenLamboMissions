@@ -242,6 +242,11 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         mission.removed = true;
     }
 
+    function getMission(uint missionId) external view returns(MissionView memory) {
+        MissionData storage mission = _missions[missionId];
+        return MissionView(mission.removed, mission.config);
+    }
+
     event MissionEntered(uint missionId, uint tokenId, uint entryId);
     function enterMission(uint tokenId, uint missionId) external nonReentrant returns(uint entryId) {
         address account = msg.sender;
