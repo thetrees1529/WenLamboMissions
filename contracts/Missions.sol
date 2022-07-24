@@ -146,9 +146,18 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         string name;
         RewardViewItems items;
     }
+    struct PrizeView {
+        string name;
+        uint prizeIndex;
+        RewardViewItems items;
+    }
     struct PrizeOption {
         uint weighting;
         Reward prize;
+    }
+    struct PrizeOptionView {
+        uint prizeIndex;
+        PrizeOption option;
     }
     struct PrizeConfig {
         Requirement[] requirements;
@@ -157,20 +166,15 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     }
     struct ResultView {
         RewardView rewards;
-        RewardView prizes;
-    }
-    struct LamboData {
-        bool inMission;
-        uint missionId;
-        uint entryId;
-        uint missionEndsAt;
-        uint cooldownEndsAt;
-        uint totalEarnings;
+        PrizeView prizes;
     }
     struct LamboMissionData {
         uint completions;
-        uint earnings;
         mapping(uint => uint) prizeHits;
+    }
+    struct LamboData {
+        bool hasEntry;
+        uint entryId;
     }
     struct MissionConfig {
         string meta;
@@ -186,19 +190,19 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         bool removed;
         MissionConfig config;
     }
-    struct PrizeOptionView {
-        uint prizeId;
-        PrizeOption prizeOption;
-    }
     struct MissionData {
         MissionConfig config;
         bool removed;
         mapping(uint => LamboMissionData) lamboMissionData;
     }
-    event MissionCreated(uint missionId);
-    event MissionRemoved(uint missionId);
-    event MissionEntered(uint tokenId, uint missionId, uint entryId, uint endsAt);
-    event MissionFinished(uint entryId, uint resultId, uint cooldownEndsAt);
+    struct MissionEntry {
+        uint tokenId;
+        uint missionId;
+        uint endsAt;
+        bool ended;
+        uint cooldownEndsAt;
+        ResultView result;
+    }
 
     constructor(ILambos collection, IWallet wallet, IMetadata metadata, IToolboxes toolboxes, IGarageManager garageManager) ERC20Payments(IERC20(wallet.hVilleAddress())) {
         _collection = collection;
@@ -215,8 +219,8 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     IGarageManager private _garageManager;
 
     MissionData[] private _missions;
+    MissionEntry[] private _entries;
     mapping(uint => LamboData) private _lambos;
-    ResultView[] private _results;
 
     Counters.Counter private _entryIds;
 
@@ -224,8 +228,9 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         _setPayees(payees);
     }
 
-    function createMission(MissionConfig calldata config) external nonReentrant onlyOwner {
-        uint missionId = _missions.length;
+    event MissionCreated(uint missionId);
+    function createMission(MissionConfig calldata config) external nonReentrant onlyOwner returns(uint missionId) {
+        missionId = _missions.length;
         MissionData storage mission = _missions.push();
         mission.config = config;
         emit MissionCreated(missionId);
@@ -235,133 +240,107 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         MissionData storage mission = _missions[missionId];
         require(!mission.removed, "Already removed.");
         mission.removed = true;
-        emit MissionRemoved(missionId);
     }
 
-    function enterMission(uint tokenId, uint missionId) external nonReentrant ownsLambo(tokenId) {
+    event MissionEntered(uint missionId, uint tokenId, uint entryId);
+    function enterMission(uint tokenId, uint missionId) external nonReentrant returns(uint entryId) {
+        address account = msg.sender;
+
         MissionData storage mission = _missions[missionId];
+        LamboMissionData storage lamboMissionData = mission.lamboMissionData[tokenId];
+        MissionConfig storage missionConfig = mission.config;
+        LamboData storage lambo = _lambos[tokenId];
+
+        _requireOwnsLambo(account, tokenId);
         require(!mission.removed, "Mission was removed.");
+        require(lamboMissionData.completions < missionConfig.maxCompletions);
+        require(_meetsRequirements(account, tokenId, missionConfig.requirements), "Requirements not met.");
 
-        LamboData storage lambo = _lambos[tokenId];
-        require(!lambo.inMission, "Lambo is in a mission.");
-        require(block.timestamp >= lambo.cooldownEndsAt, "Lambo is under cooldown.");
+        _takePayment(account, missionConfig.entry);
 
-        MissionConfig storage config = mission.config;
-        LamboMissionData storage lamboMissionData = mission.lamboMissionData[tokenId];
-        require(lamboMissionData.completions < config.maxCompletions, "Max completions hit.");
+        entryId = _entries.length;
 
-        lambo.inMission = true;
-        lambo.missionId = missionId;
-        lambo.entryId = _newEntryId();
-        lambo.missionEndsAt = block.timestamp + config.duration;
-
-        address account = msg.sender;
-        require(_meetsRequirements(account, tokenId, config.requirements), "Have not met the requirements.");
-
-        _takePayment(account, config.entry);
-
-        emit MissionEntered(tokenId, missionId, lambo.entryId, lambo.missionEndsAt);
-    }
-    //storage variable because memoery arrays don't support push
-    PrizeOptionView[] private _qualifiedPrizes;
-    function endMission(uint tokenId) external nonReentrant ownsLambo(tokenId) {
-        address account = msg.sender;
-        LamboData storage lambo = _lambos[tokenId];
-        require(lambo.inMission, "Lambo is not in a mission.");
-        require(block.timestamp >= lambo.missionEndsAt, "MIssion has not finished yet.");
-
-        MissionData storage mission = _missions[lambo.missionId];
-        LamboMissionData storage lamboMissionData = mission.lamboMissionData[tokenId];
-        MissionConfig storage config = mission.config;
-        PrizeConfig[] storage prizes = config.prizes;
-
-        RewardView memory rewards = _dispenseReward(account, config.reward);
-        lamboMissionData.earnings += rewards.items.prize;
-        lambo.totalEarnings += rewards.items.prize;
-
-        uint totalWeightings;
-
-        for(uint i; i < prizes.length; i ++) {
-            PrizeConfig storage prizeConfig = prizes[i];
-            if(
-                _meetsRequirements(account, tokenId, prizeConfig.requirements) &&
-                lamboMissionData.prizeHits[i] < prizeConfig.maxHits 
-            ) {
-                PrizeOption storage prizeOption = prizeConfig.prizeOption;
-                _qualifiedPrizes.push(PrizeOptionView(i, prizeOption));
-                totalWeightings += prizeOption.weighting;
-            }
+        if(lambo.hasEntry) {
+            MissionEntry storage lastEntry = _entries[lambo.entryId];
+            require(lastEntry.ended, "Last mission entry not finished.");
+            require(block.timestamp >= lastEntry.cooldownEndsAt, "Last mission cooldown not over.");
+        } else {
+            lambo.hasEntry = true;
+            lambo.entryId = entryId;
         }
 
-        RewardView memory prize;
-        uint rInt = uint(sha256(abi.encode(lambo.missionId, tokenId, lamboMissionData.completions)));
-        for(uint i; i < _qualifiedPrizes.length; i ++) {
-            PrizeOptionView storage prizeOptionView = _qualifiedPrizes[i];
-            PrizeOption storage prizeOption = prizeOptionView.prizeOption;
-            uint value = rInt % totalWeightings;
-            if(value < prizeOption.weighting) {
-                prize = _dispenseReward(account, prizeOption.prize);
-                lamboMissionData.prizeHits[prizeOptionView.prizeId] ++;
-                lamboMissionData.earnings += prizeOption.prize.items.prize;
-                lambo.totalEarnings += prizeOption.prize.items.prize;
+        MissionEntry storage missionEntry = _entries.push();
+        missionEntry.endsAt = block.timestamp + missionConfig.duration;
+        missionEntry.missionId = missionId;
+        missionEntry.tokenId = tokenId;
+
+        emit MissionEntered(missionId, tokenId, entryId);
+    }
+
+    function endMission(uint entryId) external nonReentrant {
+        address account = msg.sender;
+
+        MissionEntry storage entry = _entries[entryId];
+        MissionData storage mission = _missions[entry.missionId];
+        LamboMissionData storage lamboMissionData = mission.lamboMissionData[entry.tokenId];
+        MissionConfig storage missionConfig = mission.config;
+        PrizeConfig[] storage prizeConfigs = missionConfig.prizes;
+
+        require(!entry.ended, "Mission entry already ended.");
+        require(block.timestamp >= entry.endsAt, "Mission not over.");
+        _requireOwnsLambo(account, entry.tokenId);
+
+        PrizeOptionView[] memory qualifiedPrizes = new PrizeOptionView[](prizeConfigs.length);
+        uint i;
+        uint totalWeighting;
+        for(uint j; j < prizeConfigs.length; j ++) {
+            PrizeConfig storage prizeConfig = prizeConfigs[j];
+            if(
+                _meetsRequirements(account, entry.tokenId, prizeConfig.requirements) &&
+                lamboMissionData.prizeHits[j] < prizeConfig.maxHits
+            ) {
+                qualifiedPrizes[i] = PrizeOptionView(j, prizeConfig.prizeOption);
+                totalWeighting += prizeConfig.prizeOption.weighting;
+                i ++;
+            }
+        }
+        PrizeView memory prizes;
+        uint rInt = uint(sha256(abi.encode(entry.missionId, entry.tokenId, lamboMissionData.completions)));
+        for(uint j; j < i; j ++) {
+            PrizeOptionView memory prizeOptionView = qualifiedPrizes[j];
+            PrizeOption memory prizeOption = prizeOptionView.option;
+            uint res = rInt % totalWeighting;
+            if(res < prizeOption.weighting) {
+                RewardViewItems memory prizeViewItems = _dispenseRewardItems(account, prizeOption.prize.items); 
+                prizes = PrizeView(prizeOption.prize.name, prizeOptionView.prizeIndex, prizeViewItems);
+                lamboMissionData.prizeHits[prizeOptionView.prizeIndex] ++;
                 break;
             }
-            totalWeightings -= prizeOption.weighting;
+            totalWeighting -= prizeOption.weighting;
         }
 
-        lamboMissionData.completions ++;
-        lambo.inMission = false;
-        lambo.cooldownEndsAt = lambo.missionEndsAt + config.cooldown;
+        RewardViewItems memory rewardViewItems = _dispenseRewardItems(account, missionConfig.reward.items);
 
-
-        uint resultId = _results.length;
-        _results.push(ResultView({
-            rewards: rewards,
-            prizes: prize
-        }));
-
-        emit MissionFinished(lambo.entryId, resultId, lambo.cooldownEndsAt);
-
-
-        //reset the storage variable for next time
-        delete _qualifiedPrizes;
-
-    }
-
-    function getMission(uint missionId) external view returns(MissionView memory){
-        MissionData storage mission = _missions[missionId];
-        return MissionView({
-            removed: mission.removed,
-            config: mission.config
+        entry.ended = true;
+        entry.cooldownEndsAt = entry.endsAt + missionConfig.cooldown;
+        entry.result = ResultView({
+            prizes: prizes,
+            rewards: RewardView(missionConfig.reward.name, rewardViewItems)
         });
     }
 
-    function getTotalEarnings(uint tokenId) external view returns(uint) {
-        return _lambos[tokenId].totalEarnings;
+    function getEntry(uint entryId) external view returns(MissionEntry memory) {
+        return _entries[entryId];
     }
-
-    function getMissionStats(uint tokenId, uint missionId) external view returns(uint) {
-        return _missions[missionId].lamboMissionData[tokenId].earnings;
-    }
-
-    function getResult(uint resultId) external view returns(ResultView memory) {
-        return _results[resultId];
-    }
-    function _newEntryId() private returns(uint entryId) {
-        entryId = _entryIds.current();
-        _entryIds.increment();
-    }
-    function _dispenseReward(address to, Reward storage reward) private returns(RewardView memory rewardView) {
-        RewardItems storage items = reward.items;
-        return RewardView({
-            name: reward.name,
-            items: RewardViewItems({
+ 
+    function _dispenseRewardItems(address to, RewardItems memory items) private returns(RewardViewItems memory rewardView) {
+        return RewardViewItems({
                 prize: _dispenseHville(to, items.prize),
                 toolboxes: _dispenseToolboxes(to, items.toolboxes),
                 pouches: _dispensePouches(to, items.pouches),
                 nfts: _dispenseNftRewards(to, items.nfts)
-            })
-        });
+            });
+
     }
 
     function _dispenseHville(address to, uint value) private returns(uint) {
@@ -387,7 +366,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     }
 
     Nft[] private _nfts;
-    function _dispenseNftRewards(address to, NftRewardConfig[] storage nftRewards) private returns(Nft[] memory nfts) {
+    function _dispenseNftRewards(address to, NftRewardConfig[] memory nftRewards) private returns(Nft[] memory nfts) {
         for(uint i ; i < nftRewards.length; i ++){
             Nft[] memory temp = _dispenseNftReward(to, nftRewards[i]);
             for(uint j; j < temp.length; j++) {
@@ -398,7 +377,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         delete _nfts;
     }
 
-    function _dispenseNftReward(address to, NftRewardConfig storage nftReward) private returns(Nft[] memory nfts) {
+    function _dispenseNftReward(address to, NftRewardConfig memory nftReward) private returns(Nft[] memory nfts) {
         nfts = new Nft[](nftReward.nftReward.numberOf);
         for(uint i; i < nftReward.nftReward.numberOf; i ++) {
             uint tokenId = nftReward.nftReward.collection.tokenOfOwnerByIndex(nftReward.holder,0);
@@ -408,14 +387,14 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
 
     }
 
-    function _dispensePouches(address to, PouchConfig[] storage pouches) private returns(Pouch[] memory pouchViews){
+    function _dispensePouches(address to, PouchConfig[] memory pouches) private returns(Pouch[] memory pouchViews){
         pouchViews = new Pouch[](pouches.length);
         for(uint i; i < pouches.length; i ++) {
             pouchViews[i] = _dispensePouch(to, pouches[i]);
         }
     }
 
-    function _dispensePouch(address to, PouchConfig storage pouch) private returns(Pouch memory) {
+    function _dispensePouch(address to, PouchConfig memory pouch) private returns(Pouch memory) {
         pouch.pouch.token.transferFrom(pouch.holder,to, pouch.pouch.value);
         return pouch.pouch;
     }
@@ -508,9 +487,10 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
             }
         }
     }
-    modifier ownsLambo(uint tokenId) {
-        require(msg.sender == _collection.ownerOf(tokenId), "You don't own this lambo.");
-        _;
+
+
+    function _requireOwnsLambo(address account, uint tokenId) private view {
+        require(_collection.ownerOf(tokenId) == account, "Not owner of lambo.");
     }
 
 }
