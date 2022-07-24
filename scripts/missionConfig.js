@@ -16,7 +16,7 @@ module.exports = {
         {
             minLevels: [
                 {
-                        stat: "Handling",
+                        stat: "handling",
                         value: 2
                 }
             ],
