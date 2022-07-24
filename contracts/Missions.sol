@@ -195,7 +195,6 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         bool removed;
         mapping(uint => LamboMissionData) lamboMissionData;
     }
-
     event MissionCreated(uint missionId);
     event MissionRemoved(uint missionId);
     event MissionEntered(uint tokenId, uint missionId, uint entryId, uint endsAt);
@@ -341,7 +340,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         return _lambos[tokenId].totalEarnings;
     }
 
-    function getMissionEarnings(uint tokenId, uint missionId) external view returns(uint) {
+    function getMissionStats(uint tokenId, uint missionId) external view returns(uint) {
         return _missions[missionId].lamboMissionData[tokenId].earnings;
     }
 

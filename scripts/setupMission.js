@@ -1,4 +1,4 @@
-const contractAddress = require("./outputs/deployedAddress")
+const contractAddress = require("./outputs/deployedAddresses")[hre.network.name]
 const config = require("./missionConfig.js")
 
 

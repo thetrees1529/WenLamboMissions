@@ -1,8 +1,8 @@
 
 module.exports = {
     meta: JSON.stringify({
-        name: "this is the name of the mission",
-        missionDetails: "this is the mission details",
+        name: "Transportation",
+        missionDetails: " A high profile client has requested a speedy transfer to their private airport. They'd like a smooth ride, so your lambo needs some good shocks.",
         rewardDetails: "this is the reward details",
         cooldownDetails: "this is the cooldown details",
         subtitle: "this is the subtitle",
@@ -16,65 +16,46 @@ module.exports = {
         {
             minLevels: [
                 {
-                        stat: "example level",
+                        stat: "Handling",
                         value: 2
-                },
-                {
-                        stat: "example level",
-                        value: 1
                 }
             ],
-            requiredAttributes: [
-                {
-                        key: "example attribute",
-                        value: "example value"
-                    
-                }
-            ],
-            minCompletions: [
-                {
-                        missionId: 1,
-                        numberOf: 0
-                    
-                }
-            ],
-            nftBalanceRequirements: [
-                {
-                        nft: hre.ethers.constants.AddressZero,
-                        numberOf: 1
-                    
-                }
-            ],
-            requiredGarageLevels: [
-                {
-                        /*
-                            0 - pitcrew
-                            1 - crewChief
-                            2 - mechanic
-                            3 -
-                        */
-                        attr: 0,
-                        level: 2
-                }
-            ]
+            requiredAttributes: [],
+            minCompletions: [],
+            nftBalanceRequirements: [],
+            requiredGarageLevels: []
         }
     ],
     prizes: [
         {
-            
+            requirements: [],
+            maxHits: ethers.constants.MaxUint256,
+            prizeOption: {
+                weighting: 1,
+                prize: {
+                    name: "Great job",
+                    items: {
+                        prize: ethers.utils.parseEther("200"),
+                        nfts: [],
+                        pouches: [],
+                        toolboxes: 0
+                    }
+                }
+                
+            }
         }
     ],
-    entry: hre.ethers.utils.parseEther("10"),
+    entry: hre.ethers.utils.parseEther("50"),
     duration: 20 ,
     cooldown: 20,  
     reward: 
         {
-            name: "default",
+            name: "",
             items: {
-                prize: hre.ethers.utils.parseEther("10"),
+                prize: 0,
                 nfts: [],
                 pouches: [],
-                toolboxes: 5
+                toolboxes: 0
             }
         }
     ,
