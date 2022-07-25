@@ -4,7 +4,7 @@ module.exports = {
         name: "Transportation",
         missionDetails: " A high profile client has requested a speedy transfer to their private airport. They'd like a smooth ride, so your lambo needs some good shocks.",
         rewardDetails: "this is the reward details",
-        bestRewardDetails: "this is the details of the best reward",
+        bestPrizeDetails: "this is the details of the best prize",
         cooldownDetails: "this is the cooldown details",
         subtitle: "this is the subtitle",
         videoLocation: "/example/video/location",
