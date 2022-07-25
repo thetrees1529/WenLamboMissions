@@ -237,10 +237,12 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         emit MissionCreated(missionId);
     }
 
+    event MissionRemoved(uint missionId);
     function removeMission(uint missionId) external nonReentrant onlyOwner {
         MissionData storage mission = _missions[missionId];
         require(!mission.removed, "Already removed.");
         mission.removed = true;
+        emit MissionRemoved(missionId);
     }
 
     function getMission(uint missionId) external view returns(MissionView memory) {
@@ -283,6 +285,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         emit MissionEntered(missionId, tokenId, entryId);
     }
 
+    event MissionFinished(uint entryId);
     function endMission(uint entryId) external nonReentrant {
         address account = msg.sender;
 
@@ -334,6 +337,8 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
             prizes: prizes,
             rewards: RewardView(missionConfig.reward.name, rewardViewItems)
         });
+
+        emit MissionFinished(entryId);
     }
 
     function getEntry(uint entryId) external view returns(MissionEntry memory) {

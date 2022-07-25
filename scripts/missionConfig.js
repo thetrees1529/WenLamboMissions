@@ -84,7 +84,7 @@ module.exports = {
             }
         }
     ],
-    entry: hre.ethers.utils.parseEther("50"),
+    entry: hre.ethers.utils.parseEther("0"),
     duration: 20 ,
     cooldown: 20,  
     reward: 
