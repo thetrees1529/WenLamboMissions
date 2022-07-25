@@ -162,7 +162,8 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     struct PrizeConfig {
         Requirement[] requirements;
         uint maxHits;
-        PrizeOption prizeOption;
+        uint weighting;
+        Reward prize;
     }
     struct ResultView {
         RewardView rewards;
@@ -304,8 +305,8 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
                 _meetsRequirements(account, entry.tokenId, prizeConfig.requirements) &&
                 lamboMissionData.prizeHits[j] < prizeConfig.maxHits
             ) {
-                qualifiedPrizes[i] = PrizeOptionView(j, prizeConfig.prizeOption);
-                totalWeighting += prizeConfig.prizeOption.weighting;
+                qualifiedPrizes[i] = PrizeOptionView(j, PrizeOption(prizeConfig.weighting, prizeConfig.prize));
+                totalWeighting += prizeConfig.weighting;
                 i ++;
             }
         }

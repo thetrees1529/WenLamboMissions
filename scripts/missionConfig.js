@@ -56,34 +56,31 @@ module.exports = {
         {
             requirements: [],
             maxHits: ethers.constants.MaxUint256,
-            prizeOption: {
-                weighting: 1,
-                prize: {
-                    name: "Great job",
-                    items: {
-                        prize: ethers.utils.parseEther("200"),
-                        nfts: [
-                            // {
-                            //     nftReward: {
-                            //         collection: "nft collection address",
-                            //         numberOf: 1
-                            //     },
-                            //     holder: "address to transfer nft from when won."
-                            // }
-                        ],
-                        pouches: [
-                            // {
-                            //     pouch: {
-                            //         token: "erc20 address",
-                            //         value: 2
-                            //     },
-                            //     holder: "address to transfer tokens from"
-                            // }
-                        ],
-                        toolboxes: 3
-                    }
+            weighting: 1,
+            prize: {
+                name: "Great job",
+                items: {
+                    prize: ethers.utils.parseEther("200"),
+                    nfts: [
+                        // {
+                        //     nftReward: {
+                        //         collection: "nft collection address",
+                        //         numberOf: 1
+                        //     },
+                        //     holder: "address to transfer nft from when won."
+                        // }
+                    ],
+                    pouches: [
+                        // {
+                        //     pouch: {
+                        //         token: "erc20 address",
+                        //         value: 2
+                        //     },
+                        //     holder: "address to transfer tokens from"
+                        // }
+                    ],
+                    toolboxes: 3
                 }
-                
             }
         }
     ],
