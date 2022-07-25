@@ -324,8 +324,9 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
             totalWeighting -= prizeOption.weighting;
         }
 
-        RewardViewItems memory rewardViewItems = _dispenseRewardItems(account, missionConfig.reward.items);
+        lamboMissionData.completions ++;
 
+        RewardViewItems memory rewardViewItems = _dispenseRewardItems(account, missionConfig.reward.items);
         entry.ended = true;
         entry.cooldownEndsAt = entry.endsAt + missionConfig.cooldown;
         entry.result = ResultView({

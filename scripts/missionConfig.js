@@ -16,14 +16,39 @@ module.exports = {
         {
             minLevels: [
                 {
-                        stat: "handling",
-                        value: 2
+                    stat: "handling",
+                    value: 2
                 }
             ],
-            requiredAttributes: [],
-            minCompletions: [],
-            nftBalanceRequirements: [],
-            requiredGarageLevels: []
+            requiredAttributes: [
+                {
+                    key: "example metadata attribute",
+                    value: "example metadata value"
+                }
+            ],
+            minCompletions: [
+                {
+                    missionId: 2,
+                    numberOf: 1
+                }
+            ],
+            nftBalanceRequirements: [
+                {
+                    nft: "0x976cEeE0d525780115E37325FD0CC3b8347b8fF1",
+                    numberOf: 0
+                }
+            ],
+            requiredGarageLevels: [
+                {
+                    //0 - pitcrew,
+                    //1 - crewChief,
+                    //2 - mechanic,
+                    //3 - gasman,
+                    //4 - tireChanger
+                    attr: 3,
+                    level: 2
+                }
+            ]
         }
     ],
     prizes: [
@@ -36,9 +61,25 @@ module.exports = {
                     name: "Great job",
                     items: {
                         prize: ethers.utils.parseEther("200"),
-                        nfts: [],
-                        pouches: [],
-                        toolboxes: 0
+                        nfts: [
+                            // {
+                            //     nftReward: {
+                            //         collection: "nft collection address",
+                            //         numberOf: 1
+                            //     },
+                            //     holder: "address to transfer nft from when won."
+                            // }
+                        ],
+                        pouches: [
+                            // {
+                            //     pouch: {
+                            //         token: "erc20 address",
+                            //         value: 2
+                            //     },
+                            //     holder: "address to transfer tokens from"
+                            // }
+                        ],
+                        toolboxes: 3
                     }
                 }
                 
