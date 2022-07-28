@@ -7,7 +7,8 @@ module.exports = {
         cooldownDetails: "this is the cooldown details",
         subtitle: "this is the subtitle",
         videoLocation: "/example/video/location",
-        iconLocation: "/example/icon/location"
+        iconLocation: "/example/icon/location",
+        tokenEntrySymbol: "JEWEL"
     }),
     requirements: [
         //ONLY ONE OF ANY OF THE ITEMS FROM ANY OF TEH ARRAYS FOR EACH OBJECT HAS TO BE MET.
