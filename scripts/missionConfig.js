@@ -1,7 +1,6 @@
-
 module.exports = {
     meta: JSON.stringify({
-        name: "Transportation",
+        name: "Test Mission - VIP Transport",
         missionDetails: " A high profile client has requested a speedy transfer to their private airport. They'd like a smooth ride, so your lambo needs some good shocks.",
         rewardDetails: "this is the reward details",
         bestPrizeDetails: "this is the details of the best prize",
@@ -18,37 +17,37 @@ module.exports = {
             minLevels: [
                 {
                     stat: "handling",
-                    value: 2
+                    value: 5
                 }
             ],
             requiredAttributes: [
                 {
-                    key: "example metadata attribute",
-                    value: "example metadata value"
+                    key: "License Plate",
+                    value: "WenLambo"
                 }
             ],
-            minCompletions: [
-                {
-                    missionId: 2,
-                    numberOf: 1
-                }
-            ],
+           minCompletions: [
+              //{
+                  //missionId: 2,
+                   //numberOf: 1
+               //}
+           ],
             nftBalanceRequirements: [
-                {
-                    nft: "0x976cEeE0d525780115E37325FD0CC3b8347b8fF1",
-                    numberOf: 0
-                }
+                //{
+                    //nft: "0x976cEeE0d525780115E37325FD0CC3b8347b8fF1",
+                    //numberOf: 0
+                //}
             ],
-            requiredGarageLevels: [
-                {
+           requiredGarageLevels: [
+               //{
                     //0 - pitcrew,
                     //1 - crewChief,
                     //2 - mechanic,
                     //3 - gasman,
                     //4 - tireChanger
-                    attr: 3,
-                    level: 2
-                }
+                   // attr: 3,
+                    //level: 2
+                //}
             ]
         }
     ],
@@ -56,7 +55,7 @@ module.exports = {
         {
             requirements: [],
             maxHits: ethers.constants.MaxUint256,
-            weighting: 1,
+            weighting: 4,
             prize: {
                 name: "Great job",
                 items: {
@@ -79,14 +78,14 @@ module.exports = {
                         //     holder: "address to transfer tokens from"
                         // }
                     ],
-                    toolboxes: 3
+                    toolboxes: 0
                 }
             }
         }
     ],
     entry: hre.ethers.utils.parseEther("0"),
     duration: 20 ,
-    cooldown: 20,  
+    cooldown: 20,
     reward: 
         {
             name: "",

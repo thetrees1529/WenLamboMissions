@@ -126,6 +126,10 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         Pouch pouch;
         address holder;
     }
+    struct EntryPouchConfig {
+        Pouch pouch;
+        address receiver;
+    }
     struct RewardItems {
         uint prize;
         NftRewardConfig[] nfts;
@@ -186,6 +190,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         uint cooldown;
         uint maxCompletions;
         uint entry;
+        EntryPouchConfig[] erc20Entries;
     }
     struct MissionView {
         bool removed;
@@ -265,6 +270,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         require(_meetsRequirements(account, tokenId, missionConfig.requirements), "Requirements not met.");
 
         _takePayment(account, missionConfig.entry);
+        _takeERC20Payments(account, missionConfig.erc20Entries);
 
         entryId = _entries.length;
 
@@ -414,6 +420,14 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     function _takePayment(address from, uint value) private {
         IERC20(_wallet.hVilleAddress()).safeTransferFrom(from, address(this), value);
         _makePayment(value);
+    }
+
+    function _takeERC20Payments(address from, EntryPouchConfig[] storage entryPouches) private {
+        for(uint i; i < entryPouches.length; i ++) _takeERC20Payment(from, entryPouches[i]);
+    }
+
+    function _takeERC20Payment(address from, EntryPouchConfig storage entryPouch) private {
+        entryPouch.pouch.token.safeTransferFrom(from,entryPouch.receiver, entryPouch.pouch.value);
     }
 
     function _meetsRequirements(address account, uint tokenId, Requirement[] storage requirements) private view returns(bool) {
