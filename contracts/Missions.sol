@@ -300,6 +300,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         LamboMissionData storage lamboMissionData = mission.lamboMissionData[entry.tokenId];
         MissionConfig storage missionConfig = mission.config;
         PrizeConfig[] storage prizeConfigs = missionConfig.prizes;
+        LamboData storage lambo = _lambos[entry.tokenId];
 
         require(!entry.ended, "Mission entry already ended.");
         require(block.timestamp >= entry.endsAt, "Mission not over.");
@@ -343,6 +344,8 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
             prizes: prizes,
             rewards: RewardView(missionConfig.reward.name, rewardViewItems)
         });
+
+        lambo.entryId = entryId;
 
         emit MissionFinished(entryId);
     }

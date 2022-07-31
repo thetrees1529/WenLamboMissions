@@ -1,14 +1,14 @@
 module.exports = {
     meta: JSON.stringify({
-        name: "Test Mission - VIP Transport",
+        name: "VIP Transport",
         missionDetails: " A high profile client has requested a speedy transfer to their private airport. They'd like a smooth ride, so your lambo needs some good shocks.",
-        rewardDetails: "this is the reward details",
-        bestPrizeDetails: "this is the details of the best prize",
-        cooldownDetails: "this is the cooldown details",
-        subtitle: "this is the subtitle",
-        videoLocation: "/example/video/location",
-        iconLocation: "/example/icon/location",
-        tokenEntrySymbol: "JEWEL"
+        rewardDetails: "Tips will be given for those good drivers. Get your VIP to the airport smooth and safe. He will tip you with a reward.",
+        bestPrizeDetails: "Top Tip 200 HVILLE for this mission",
+        cooldownDetails: "Your Lambo will be required to cool down for 2 hours before trying this mission again.",
+        subtitle: "Get the VIP to the airport on time and get a big tip.",
+        videoLocation: { type: "video", path: "https://storageapi.fleek.co/c607c1dc-cdb6-453f-ab3e-9e0b1c8a1cd9-bucket/videos/03-cutscene-vip.mp4" },
+        iconLocation: "https://storageapi.fleek.co/c607c1dc-cdb6-453f-ab3e-9e0b1c8a1cd9-bucket/icons/03-icon-vip.png",
+        tokenEntrySymbol: "HVILLE"
     }),
     requirements: [
         //ONLY ONE OF ANY OF THE ITEMS FROM ANY OF TEH ARRAYS FOR EACH OBJECT HAS TO BE MET.
@@ -18,14 +18,14 @@ module.exports = {
             minLevels: [
                 {
                     stat: "handling",
-                    value: 5
+                    value: 4
                 }
             ],
             requiredAttributes: [
-                {
-                    key: "License Plate",
-                    value: "WenLambo"
-                }
+                //{
+                    //key: "License Plate",
+                    //value: "WenLambo"
+                //}
             ],
            minCompletions: [
               //{
@@ -53,16 +53,16 @@ module.exports = {
         },
         {
             minLevels: [
-                {
-                    stat: "handling",
-                    value: 5
-                }
+                //{
+                    //stat: "handling",
+                    //value: 5
+                //}
             ],
             requiredAttributes: [
-                {
-                    key: "License Plate",
-                    value: "WenLambo"
-                }
+                //{
+                    //key: "License Plate",
+                    //value: "WenLambo"
+                //}
             ],
            minCompletions: [
               //{
@@ -93,9 +93,9 @@ module.exports = {
         {
             requirements: [],
             maxHits: ethers.constants.MaxUint256,
-            weighting: 4,
+            weighting: 5,
             prize: {
-                name: "Great job",
+                name: "Great job! Big Tip!",
                 items: {
                     prize: ethers.utils.parseEther("200"),
                     nfts: [
@@ -123,11 +123,72 @@ module.exports = {
         {
             requirements: [],
             maxHits: ethers.constants.MaxUint256,
-            weighting: 4,
+            weighting: 15,
             prize: {
-                name: "Great job",
+                name: "3 Stars, Better luck next time",
                 items: {
-                    prize: ethers.utils.parseEther("200"),
+                    prize: ethers.utils.parseEther("75"),
+                    nfts: [
+                        // {
+                        //     nftReward: {
+                        //         collection: "nft collection address",
+                        //         numberOf: 1
+                        //     },
+                        //     holder: "address to transfer nft from when won."
+                        // }
+                    ],
+                    pouches: [
+                        // {
+                        //     pouch: {
+                        //         token: "erc20 address",
+                        //         value: 2
+                        //     },
+                        //     holder: "address to transfer tokens from"
+                        // }
+                    ],
+                    toolboxes: 0
+                }
+            }
+        },
+
+        {
+            requirements: [],
+            maxHits: ethers.constants.MaxUint256,
+            weighting: 15,
+            prize: {
+                name: "Not Hiring you again",
+                items: {
+                    prize: ethers.utils.parseEther("25"),
+                    nfts: [
+                        // {
+                        //     nftReward: {
+                        //         collection: "nft collection address",
+                        //         numberOf: 1
+                        //     },
+                        //     holder: "address to transfer nft from when won."
+                        // }
+                    ],
+                    pouches: [
+                        // {
+                        //     pouch: {
+                        //         token: "erc20 address",
+                        //         value: 2
+                        //     },
+                        //     holder: "address to transfer tokens from"
+                        // }
+                    ],
+                    toolboxes: 0
+                }
+            }
+        },
+{
+            requirements: [],
+            maxHits: ethers.constants.MaxUint256,
+            weighting: 17,
+            prize: {
+                name: "Take your money back!",
+                items: {
+                    prize: ethers.utils.parseEther("50"),
                     nfts: [
                         // {
                         //     nftReward: {
@@ -150,8 +211,9 @@ module.exports = {
                 }
             }
         }
+
     ],
-    entry: hre.ethers.utils.parseEther("0"),
+    entry: hre.ethers.utils.parseEther("50"),
     erc20Entries: [
         // {
         //     receiver: "0x782345aae234723742347...",
@@ -161,8 +223,8 @@ module.exports = {
         //     }
         // }
     ],
-    duration: 20 ,
-    cooldown: 20,
+    duration: 14400 ,
+    cooldown: 7200,
     reward: 
         {
             name: "",
@@ -174,5 +236,5 @@ module.exports = {
             }
         }
     ,
-    maxCompletions: 1
+    maxCompletions: 10
 }
