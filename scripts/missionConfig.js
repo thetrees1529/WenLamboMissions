@@ -50,44 +50,7 @@ module.exports = {
                     //level: 2
                 //}
             ]
-        },
-        {
-            minLevels: [
-                //{
-                    //stat: "handling",
-                    //value: 5
-                //}
-            ],
-            requiredAttributes: [
-                //{
-                    //key: "License Plate",
-                    //value: "WenLambo"
-                //}
-            ],
-           minCompletions: [
-              //{
-                  //missionId: 2,
-                   //numberOf: 1
-               //}
-           ],
-            nftBalanceRequirements: [
-                //{
-                    //nft: "0x976cEeE0d525780115E37325FD0CC3b8347b8fF1",
-                    //numberOf: 0
-                //}
-            ],
-           requiredGarageLevels: [
-               //{
-                    //0 - pitcrew,
-                    //1 - crewChief,
-                    //2 - mechanic,
-                    //3 - gasman,
-                    //4 - tireChanger
-                   // attr: 3,
-                    //level: 2
-                //}
-            ]
-        },
+        }
     ],
     prizes: [
         {
@@ -223,8 +186,8 @@ module.exports = {
         //     }
         // }
     ],
-    duration: 14400 ,
-    cooldown: 7200,
+    duration: 60 ,
+    cooldown: 60,
     reward: 
         {
             name: "",

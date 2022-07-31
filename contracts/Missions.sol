@@ -257,7 +257,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         return MissionView(mission.removed, mission.config);
     }
 
-    event MissionEntered(uint entryId);
+    event MissionEntered(uint entryId, uint missionId, uint tokenId);
     function enterMission(uint tokenId, uint missionId) external nonReentrant returns(uint entryId) {
         address account = msg.sender;
 
@@ -285,13 +285,13 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         }
 
         lambo.entryId = entryId;
-        
+
         MissionEntry storage missionEntry = _entries.push();
         missionEntry.endsAt = block.timestamp + missionConfig.duration;
         missionEntry.missionId = missionId;
         missionEntry.tokenId = tokenId;
 
-        emit MissionEntered(entryId);
+        emit MissionEntered(entryId, missionId, tokenId);
     }
 
     event MissionFinished(uint entryId);
@@ -355,8 +355,18 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         emit MissionFinished(entryId);
     }
 
+    function getEntriesLength() external view returns(uint) {
+        return _entries.length;
+    }
+
     function getEntry(uint entryId) external view returns(MissionEntry memory) {
         return _entries[entryId];
+    }
+
+    function getRecentEntryId(uint tokenId) external view returns(uint) {
+        LamboData storage lambo = _lambos[tokenId];
+        require(lambo.hasEntry, "Lambo has never entered a mission.");
+        return lambo.entryId;
     }
 
     function getTotalEarnings(uint tokenId) external view returns(uint) {
