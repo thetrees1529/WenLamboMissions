@@ -275,7 +275,6 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         _takeERC20Payments(account, missionConfig.erc20Entries);
 
         entryId = _entries.length;
-        lambo.entryId = entryId;
 
         if(lambo.hasEntry) {
             MissionEntry storage lastEntry = _entries[lambo.entryId];
@@ -285,6 +284,8 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
             lambo.hasEntry = true;
         }
 
+        lambo.entryId = entryId;
+        
         MissionEntry storage missionEntry = _entries.push();
         missionEntry.endsAt = block.timestamp + missionConfig.duration;
         missionEntry.missionId = missionId;
