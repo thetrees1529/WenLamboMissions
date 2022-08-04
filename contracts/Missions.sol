@@ -355,6 +355,15 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         emit MissionFinished(entryId);
     }
 
+    function abortMission(uint entryId) external nonReentrant {
+        address account = msg.sender;
+        MissionEntry storage entry = _entries[entryId];
+        require(!entry.ended, "Mission entry already ended.");
+        _requireOwnsLambo(account, entry.tokenId);
+        entry.ended = true;
+        emit MissionFinished(entryId);
+    }
+
     function getEntriesLength() external view returns(uint) {
         return _entries.length;
     }
@@ -375,6 +384,10 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
 
     function getTotalEarningsByMission(uint tokenId, uint missionId) external view returns(uint) {
         return _missions[missionId].lamboMissionData[tokenId].totalEarnings;
+    }
+
+    function getEntryCount(uint tokenId, uint missionId) external view returns(uint) {
+        return _missions[missionId].lamboMissionData[tokenId].completions;
     }
  
     function _dispenseRewardItems(address to, RewardItems memory items) private returns(RewardViewItems memory rewardView) {
