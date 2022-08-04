@@ -211,6 +211,10 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         uint cooldownEndsAt;
         ResultView result;
     }
+    struct EntryInput {
+        uint tokenId;
+        uint missionId;
+    }
 
     constructor(ILambos collection, IWallet wallet, IMetadata metadata, IToolboxes toolboxes, IGarageManager garageManager) ERC20Payments(IERC20(wallet.hVilleAddress())) {
         _collection = collection;
@@ -257,8 +261,15 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         return MissionView(mission.removed, mission.config);
     }
 
+    function enterMultiple(EntryInput[] calldata entryInputs) external {
+        for(uint i; i < entryInputs.length; i ++) {
+            enterMission(entryInputs[i]);
+        }
+    }
+
     event MissionEntered(uint entryId, uint missionId, uint tokenId);
-    function enterMission(uint tokenId, uint missionId) external nonReentrant returns(uint entryId) {
+    function enterMission(EntryInput calldata entryInput) public nonReentrant returns(uint entryId) {
+        (uint tokenId, uint missionId) = (entryInput.tokenId, entryInput.missionId);
         address account = msg.sender;
 
         MissionData storage mission = _missions[missionId];
