@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "utils/contracts/payments/ERC20Payments.sol";
 interface ILambos is IERC721{
 
@@ -72,7 +71,6 @@ interface IGarageManager {
     function getTokenAttributes(uint256 _tokenId) external view returns (GarageDataView memory);
 }
 contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
-    using Counters for Counters.Counter;
     using SafeERC20 for IERC20;
     struct MinLevel {
         string stat;
@@ -178,33 +176,9 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         uint totalEarnings;
         uint currentlyEntered;
     }
-    struct GlobalDataView {
-        uint totalSpent;
-        uint totalEarnings;
-        uint entryCount;
-        uint currentlyEntered;
-        uint missionCount;
-    }
     struct LamboMissionData {
-        uint totalSpent;
-        uint totalEarnings;
         uint[] entryIds;
         mapping(uint => uint) prizeHits;
-    }
-    struct LamboMissionView {
-        uint totalSpent;
-        uint totalEarnings;
-        uint entryCount;
-    }
-    struct LamboData {
-        uint totalSpent;
-        uint totalEarnings;
-        uint[] entryIds;
-    }
-    struct LamboView {
-        uint totalSpent;
-        uint totalEarnings;
-        uint entryCount;
     }
     struct MissionConfig {
         string meta;
@@ -220,18 +194,11 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     struct MissionView {
         bool removed;
         MissionConfig config;
-        uint currentlyEntered;
-        uint totalEntered;
-        uint totalSpent;
-        uint totalEarnings;
     }
     struct MissionData {
         MissionConfig config;
         bool removed;
-        uint currentlyEntered;
         uint[] entryIds;
-        uint totalSpent;
-        uint totalEarnings;
         mapping(uint => LamboMissionData) lamboMissionData;
     }
     struct MissionEntry {
@@ -241,6 +208,10 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         bool ended;
         uint cooldownEndsAt;
         ResultView result;
+    }
+    struct MissionEntryView {
+        uint id;
+        MissionEntry entry;
     }
     struct EntryInput {
         uint tokenId;
@@ -263,7 +234,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
 
     MissionData[] private _missions;
     MissionEntry[] private _entries;
-    mapping(uint => LamboData) private _lambos;
+    mapping(uint => uint[]) private _lamboEntryIds;
 
     GlobalData private _global;
 
@@ -304,10 +275,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         MissionData storage mission = _missions[missionId];
         LamboMissionData storage lamboMissionData = mission.lamboMissionData[tokenId];
         MissionConfig storage missionConfig = mission.config;
-        LamboData storage lambo = _lambos[tokenId];
 
-        mission.currentlyEntered ++;
-        _global.currentlyEntered ++;
 
         _requireOwnsLambo(account, tokenId);
         require(!mission.removed, "Mission was removed.");
@@ -318,28 +286,22 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         _takeERC20Payments(account, missionConfig.erc20Entries);
 
         entryId = _entries.length;
-
-        if(lambo.entryIds.length > 0) {
-            MissionEntry storage lastEntry = _entries[lambo.entryIds[lambo.entryIds.length - 1]];
+        uint[] storage ids =  _lamboEntryIds[tokenId];
+        uint len = ids.length;
+        if(len > 0) {
+            MissionEntry storage lastEntry = _entries[ids[len - 1]];
             require(lastEntry.ended, "Last mission entry not finished.");
             require(block.timestamp >= lastEntry.cooldownEndsAt, "Last mission cooldown not over.");
         }
 
-        lambo.entryIds.push(entryId);
+        ids.push(entryId);
         mission.entryIds.push(entryId);
         lamboMissionData.entryIds.push(entryId);
-
-        lambo.totalSpent += missionConfig.entry;
-        mission.totalSpent += missionConfig.entry;
-        lamboMissionData.totalSpent += missionConfig.entry;
-        _global.totalSpent += missionConfig.entry;
 
         MissionEntry storage missionEntry = _entries.push();
         missionEntry.endsAt = block.timestamp + missionConfig.duration;
         missionEntry.missionId = missionId;
         missionEntry.tokenId = tokenId;
-
-
         // emit MissionEntered(entryId, missionId, tokenId);
     }
 
@@ -351,7 +313,6 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         LamboMissionData storage lamboMissionData = mission.lamboMissionData[entry.tokenId];
         MissionConfig storage missionConfig = mission.config;
         PrizeConfig[] storage prizeConfigs = missionConfig.prizes;
-        LamboData storage lambo = _lambos[entry.tokenId];
 
         require(!entry.ended, "Mission entry already ended.");
         require(block.timestamp >= entry.endsAt, "Mission not over.");
@@ -394,14 +355,6 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         });
         entry.ended = true;
 
-        uint totalEarnings = prizes.items.prize + rewardViewItems.prize;
-        lambo.totalEarnings += totalEarnings;
-        lamboMissionData.totalEarnings += totalEarnings;
-        mission.totalEarnings += totalEarnings;
-        _global.totalEarnings += totalEarnings;
-
-        mission.currentlyEntered --;
-        _global.currentlyEntered --;
 
         // emit MissionFinished(entryId, entry.result);
     }
@@ -409,31 +362,20 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     function abortMission(uint entryId) external nonReentrant {
         address account = msg.sender;
         MissionEntry storage entry = _entries[entryId];
-        MissionData storage mission = _missions[entry.missionId];
         _requireOwnsLambo(account, entry.tokenId);
+        require(!entry.ended, "Mission entry already ended.");
         entry.ended = true;
-        mission.currentlyEntered --;
-        _global.currentlyEntered --;
         // emit MissionAborted(entryId);
     }
 
-    function getGlobal() external view returns(GlobalDataView memory) {
-        return GlobalDataView(_global.totalSpent, _global.totalEarnings, _entries.length, _global.currentlyEntered, _missions.length);
-    }
 
     function getMission(uint missionId) external view returns(MissionView memory) {
         MissionData storage mission = _missions[missionId];
-        return MissionView(mission.removed, mission.config, mission.currentlyEntered, mission.entryIds.length, mission.totalSpent, mission.totalEarnings);
+        return MissionView(mission.removed, mission.config);
     }
 
-    function getLambo(uint tokenId) external view returns(LamboView memory) {
-        LamboData storage lambo = _lambos[tokenId];
-        return LamboView(lambo.totalSpent, lambo.totalEarnings, lambo.entryIds.length);
-    }
-
-    function getLamboMissionData(uint tokenId, uint missionId) external view returns(LamboMissionView memory) {
-        LamboMissionData storage lamboMissionData = _missions[missionId].lamboMissionData[tokenId];
-        return LamboMissionView(lamboMissionData.totalSpent, lamboMissionData.totalEarnings, lamboMissionData.entryIds.length);
+    function getPrizeHits(uint missionId, uint tokenId, uint prizeIndex) external view returns(uint) {
+        return _missions[missionId].lamboMissionData[tokenId].prizeHits[prizeIndex];
     }
 
     function getEntriesLength() external view returns(uint) {
@@ -443,16 +385,28 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         return _entries[entryId];
     }
 
-    function getLamboEntryId(uint tokenId, uint index) external view returns(uint) {
-        return _lambos[tokenId].entryIds[index];
+    function getLamboEntriesLength(uint tokenId) external view returns(uint) {
+        return _lamboEntryIds[tokenId].length;
+    }
+    function getLamboEntry(uint tokenId, uint index) external view returns(MissionEntryView memory) {
+        uint entryId = _lamboEntryIds[tokenId][index];
+        return MissionEntryView(entryId, _entries[entryId]);
     }
 
-    function getLamboMissionEntryId(uint tokenId, uint missionId, uint index) external view returns(uint) {
-        return _missions[missionId].lamboMissionData[tokenId].entryIds[index];
+    function getLamboMissionEntriesLength(uint missionId, uint tokenId) external view returns(uint) {
+        return _missions[missionId].lamboMissionData[tokenId].entryIds.length;
+    }
+    function getLamboMissionEntry(uint tokenId, uint missionId, uint index) external view returns(MissionEntryView memory) {
+        uint entryId = _missions[missionId].lamboMissionData[tokenId].entryIds[index];
+        return MissionEntryView(entryId, _entries[entryId]);
     }
 
-    function getMissionEntryId(uint missionId, uint index) external view returns(uint) {
-        return _missions[missionId].entryIds[index]; 
+    function getMissionEntriesLength(uint missionId) external view returns(uint) {
+        return _missions[missionId].entryIds.length;
+    }
+    function getMissionEntry(uint missionId, uint index) external view returns(MissionEntryView memory) {
+        uint entryId = _missions[missionId].entryIds[index]; 
+        return MissionEntryView(entryId, _entries[entryId]);
     }
 
     function _dispenseRewardItems(address to, RewardItems memory items) private returns(RewardViewItems memory rewardView) {
