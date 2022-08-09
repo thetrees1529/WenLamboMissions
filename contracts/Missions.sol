@@ -263,11 +263,6 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         // emit MissionRemoved(missionId);
     }
 
-    function enterMultiple(EntryInput[] calldata entryInputs) external {
-        for(uint i; i < entryInputs.length; i ++) {
-            enterMission(entryInputs[i]);
-        }
-    }
     function enterMission(EntryInput calldata entryInput) public nonReentrant returns(uint entryId) {
         (uint tokenId, uint missionId) = (entryInput.tokenId, entryInput.missionId);
         address account = msg.sender;
@@ -305,7 +300,8 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         // emit MissionEntered(entryId, missionId, tokenId);
     }
 
-    function endMission(uint entryId) external nonReentrant {
+
+    function endMission(uint entryId) public nonReentrant {
         address account = msg.sender;
 
         MissionEntry storage entry = _entries[entryId];
@@ -359,7 +355,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         // emit MissionFinished(entryId, entry.result);
     }
 
-    function abortMission(uint entryId) external nonReentrant {
+    function abortMission(uint entryId) public nonReentrant {
         address account = msg.sender;
         MissionEntry storage entry = _entries[entryId];
         _requireOwnsLambo(account, entry.tokenId);
@@ -368,7 +364,9 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         // emit MissionAborted(entryId);
     }
 
-
+    function getMissionsLength() external view returns(uint) {
+        return _missions.length;
+    }
     function getMission(uint missionId) external view returns(MissionView memory) {
         MissionData storage mission = _missions[missionId];
         return MissionView(mission.removed, mission.config);
