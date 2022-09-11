@@ -1,10 +1,11 @@
 //SPDX-License-Identifier: UNLICENCED
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "utils/contracts/payments/ERC20Payments.sol";
 interface ILambos is IERC721{
 
@@ -92,24 +93,44 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         IERC721 nft;
         uint numberOf;
     }
+    struct ERC1155NftBalanceRequirement {
+        IERC1155 nft;
+        uint tokenId;
+        uint numberOf;
+    }
     struct Requirement {
         RequiredAttribute[] requiredAttributes;
         MinLevel[] minLevels;
         MinCompletions[] minCompletions;
         NftBalanceRequirement[] nftBalanceRequirements;
+        ERC1155NftBalanceRequirement[] erc1155NftBalanceRequirements;
         RequiredGarageLevel[] requiredGarageLevels;
     }
     struct NftReward {
         IERC721Enumerable collection;
         uint numberOf;
     }
+    struct ERC1155NftReward {
+        IERC1155 collection;
+        uint tokenId;
+        uint numberOf;
+    }
     struct NftRewardConfig {
         NftReward nftReward;
+        address holder;
+    }
+    struct ERC1155NftRewardConfig {
+        ERC1155NftReward nftReward;
         address holder;
     }
     struct Nft {
         IERC721 collection;
         uint tokenId;
+    }
+    struct ERC1155Nfts {
+        IERC1155 collection;
+        uint tokenId;
+        uint numberOf;
     }
     struct Toolbox {
         uint8 upgradeType;
@@ -131,6 +152,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     struct RewardItems {
         uint prize;
         NftRewardConfig[] nfts;
+        ERC1155NftRewardConfig[] erc1155Nfts;
         PouchConfig[] pouches;
         uint toolboxes;
     }
@@ -141,6 +163,7 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
     struct RewardViewItems {
         uint prize;
         Nft[] nfts;
+        ERC1155Nfts[] erc1155Nfts;
         Pouch[] pouches;
         Toolbox[] toolboxes;
     }
@@ -412,9 +435,9 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
                 prize: _dispenseHville(to, items.prize),
                 toolboxes: _dispenseToolboxes(to, items.toolboxes),
                 pouches: _dispensePouches(to, items.pouches),
-                nfts: _dispenseNftRewards(to, items.nfts)
+                nfts: _dispenseNftRewards(to, items.nfts),
+                erc1155Nfts: _dispenseERC1155NftRewards(to, items.erc1155Nfts)
             });
-
     }
 
     function _dispenseHville(address to, uint value) private returns(uint) {
@@ -450,6 +473,14 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         nfts = _nfts;
         delete _nfts;
     }
+    ERC1155Nfts[] private _erc1155Nfts;
+    function _dispenseERC1155NftRewards(address to, ERC1155NftRewardConfig[] memory nftRewards) private returns(ERC1155Nfts[] memory nfts) {
+        for(uint i ; i < nftRewards.length; i ++){
+            _erc1155Nfts.push(_dispenseERC1155NftReward(to, nftRewards[i]));
+        }
+        nfts = _erc1155Nfts;
+        delete _erc1155Nfts;
+    }
 
     function _dispenseNftReward(address to, NftRewardConfig memory nftReward) private returns(Nft[] memory nfts) {
         nfts = new Nft[](nftReward.nftReward.numberOf);
@@ -459,6 +490,11 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
             nfts[i] = Nft(nftReward.nftReward.collection, tokenId);
         }
 
+    }
+
+    function _dispenseERC1155NftReward(address to, ERC1155NftRewardConfig memory nftReward) private returns(ERC1155Nfts memory nfts) {
+        nfts = ERC1155Nfts(nftReward.nftReward.collection, nftReward.nftReward.tokenId, nftReward.nftReward.numberOf);
+        nftReward.nftReward.collection.safeTransferFrom(nftReward.holder, to, nftReward.nftReward.tokenId, nftReward.nftReward.numberOf,"");
     }
 
     function _dispensePouches(address to, PouchConfig[] memory pouches) private returns(Pouch[] memory pouchViews){
@@ -499,7 +535,8 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
             !_meetsAnyOfRequiredGarageLevels(tokenId, requirement.requiredGarageLevels) &&
             !_meetsAnyOfNftBalanceRequirements(account, requirement.nftBalanceRequirements) &&
             !_meetsAnyOfMinCompletions(tokenId, requirement.minCompletions) &&
-            !_meetsAnyOfMinLevels(tokenId, requirement.minLevels)
+            !_meetsAnyOfMinLevels(tokenId, requirement.minLevels) &&
+            !_meetsAnyOfERC1155NftBalanceRequirements(account, requirement.erc1155NftBalanceRequirements)
         ) return false;
         else return true;
     }
@@ -538,8 +575,17 @@ contract Missions is Ownable, ReentrancyGuard, ERC20Payments {
         }
         return false;
     }
+    function _meetsAnyOfERC1155NftBalanceRequirements(address account, ERC1155NftBalanceRequirement[] storage nftBalanceRequirements) private view returns(bool) {
+        for(uint i; i < nftBalanceRequirements.length; i ++) {
+            if(_meetsERC1155NftBalanceRequirement(account, nftBalanceRequirements[i])) return true;
+        }
+        return false;
+    }
     function _meetsNftBalanceRequirement(address account, NftBalanceRequirement storage nftBalanceRequirement) private view returns(bool) {
         return nftBalanceRequirement.nft.balanceOf(account) >= nftBalanceRequirement.numberOf;
+    }
+    function _meetsERC1155NftBalanceRequirement(address account, ERC1155NftBalanceRequirement storage nftBalanceRequirement) private view returns(bool) {
+        return nftBalanceRequirement.nft.balanceOf(account, nftBalanceRequirement.tokenId) >= nftBalanceRequirement.numberOf;
     }
     function _meetsAnyOfMinCompletions(uint tokenId, MinCompletions[] storage minCompletions) private view returns(bool) {
         for(uint i; i < minCompletions.length; i ++) {
